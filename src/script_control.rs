@@ -270,11 +270,7 @@ impl ScriptControlMode {
     }
 
     /// Create with a specific working directory
-    pub fn with_working_dir(
-        width: u16,
-        height: u16,
-        working_dir: PathBuf,
-    ) -> io::Result<Self> {
+    pub fn with_working_dir(width: u16, height: u16, working_dir: PathBuf) -> io::Result<Self> {
         let backend = TestBackend::new(width, height);
         let terminal = Terminal::new(backend)?;
         let config = Config::default();
@@ -348,7 +344,10 @@ impl ScriptControlMode {
                 }
             };
 
-            tracing::trace!("script_control: received command {:?}", std::mem::discriminant(&command));
+            tracing::trace!(
+                "script_control: received command {:?}",
+                std::mem::discriminant(&command)
+            );
 
             // Record interaction
             self.record_interaction(command.clone());
@@ -789,7 +788,10 @@ impl ScriptControlMode {
             // Check if condition is met
             if self.check_wait_condition(&condition)? {
                 return Ok(ScriptResponse::Ok {
-                    message: Some(format!("Condition met after {}ms", start.elapsed().as_millis())),
+                    message: Some(format!(
+                        "Condition met after {}ms",
+                        start.elapsed().as_millis()
+                    )),
                 });
             }
 
@@ -859,15 +861,19 @@ fn {}() -> std::io::Result<()> {{
                 ScriptCommand::Render => {
                     code.push_str("    harness.render()?;\n");
                 }
-                ScriptCommand::Key { code: key, modifiers } => {
+                ScriptCommand::Key {
+                    code: key,
+                    modifiers,
+                } => {
                     let key_code = self.key_code_to_rust_code(key);
                     let mods = self.modifiers_to_rust_code(modifiers);
-                    code.push_str(&format!(
-                        "    harness.send_key({}, {})?;\n",
-                        key_code, mods
-                    ));
+                    code.push_str(&format!("    harness.send_key({}, {})?;\n", key_code, mods));
                 }
-                ScriptCommand::MouseClick { col, row, button: _ } => {
+                ScriptCommand::MouseClick {
+                    col,
+                    row,
+                    button: _,
+                } => {
                     code.push_str(&format!("    harness.mouse_click({}, {})?;\n", col, row));
                 }
                 ScriptCommand::MouseDrag {

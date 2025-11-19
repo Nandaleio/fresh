@@ -44,9 +44,8 @@ use crate::event::BufferId;
 use crate::plugin_api::{EditorStateSnapshot, PluginCommand};
 use anyhow::{anyhow, Result};
 use deno_core::{
-    extension, op2, FastString, JsRuntime, ModuleLoadResponse, ModuleSource,
-    ModuleSourceCode, ModuleSpecifier, ModuleType, OpState, RequestedModuleType,
-    ResolutionKind, RuntimeOptions,
+    extension, op2, FastString, JsRuntime, ModuleLoadResponse, ModuleSource, ModuleSourceCode,
+    ModuleSpecifier, ModuleType, OpState, RequestedModuleType, ResolutionKind, RuntimeOptions,
 };
 use std::cell::RefCell;
 use std::collections::HashMap;
@@ -133,8 +132,6 @@ fn transpile_typescript(
     Ok(transpiled.into_source().text.to_string())
 }
 
-
-
 /// Shared state accessible from ops
 struct TsRuntimeState {
     /// Editor state snapshot (read-only access)
@@ -144,7 +141,11 @@ struct TsRuntimeState {
     /// Event handlers: event_name -> list of global JS function names
     event_handlers: Rc<RefCell<HashMap<String, Vec<String>>>>,
     /// Pending response senders for async operations (request_id -> sender)
-    pending_responses: Arc<std::sync::Mutex<HashMap<u64, tokio::sync::oneshot::Sender<crate::plugin_api::PluginResponse>>>>,
+    pending_responses: Arc<
+        std::sync::Mutex<
+            HashMap<u64, tokio::sync::oneshot::Sender<crate::plugin_api::PluginResponse>>,
+        >,
+    >,
     /// Next request ID for async operations
     next_request_id: Rc<RefCell<u64>>,
 }
@@ -283,11 +284,13 @@ fn op_fresh_insert_text(
 ) -> bool {
     if let Some(runtime_state) = state.try_borrow::<Rc<RefCell<TsRuntimeState>>>() {
         let runtime_state = runtime_state.borrow();
-        let result = runtime_state.command_sender.send(PluginCommand::InsertText {
-            buffer_id: BufferId(buffer_id as usize),
-            position: position as usize,
-            text,
-        });
+        let result = runtime_state
+            .command_sender
+            .send(PluginCommand::InsertText {
+                buffer_id: BufferId(buffer_id as usize),
+                position: position as usize,
+                text,
+            });
         return result.is_ok();
     }
     false
@@ -302,18 +305,15 @@ fn op_fresh_insert_text(
 /// @param start - Start byte offset (inclusive)
 /// @param end - End byte offset (exclusive)
 #[op2(fast)]
-fn op_fresh_delete_range(
-    state: &mut OpState,
-    buffer_id: u32,
-    start: u32,
-    end: u32,
-) -> bool {
+fn op_fresh_delete_range(state: &mut OpState, buffer_id: u32, start: u32, end: u32) -> bool {
     if let Some(runtime_state) = state.try_borrow::<Rc<RefCell<TsRuntimeState>>>() {
         let runtime_state = runtime_state.borrow();
-        let result = runtime_state.command_sender.send(PluginCommand::DeleteRange {
-            buffer_id: BufferId(buffer_id as usize),
-            range: (start as usize)..(end as usize),
-        });
+        let result = runtime_state
+            .command_sender
+            .send(PluginCommand::DeleteRange {
+                buffer_id: BufferId(buffer_id as usize),
+                range: (start as usize)..(end as usize),
+            });
         return result.is_ok();
     }
     false
@@ -346,13 +346,15 @@ fn op_fresh_add_overlay(
 ) -> bool {
     if let Some(runtime_state) = state.try_borrow::<Rc<RefCell<TsRuntimeState>>>() {
         let runtime_state = runtime_state.borrow();
-        let result = runtime_state.command_sender.send(PluginCommand::AddOverlay {
-            buffer_id: BufferId(buffer_id as usize),
-            overlay_id,
-            range: (start as usize)..(end as usize),
-            color: (r, g, b),
-            underline,
-        });
+        let result = runtime_state
+            .command_sender
+            .send(PluginCommand::AddOverlay {
+                buffer_id: BufferId(buffer_id as usize),
+                overlay_id,
+                range: (start as usize)..(end as usize),
+                color: (r, g, b),
+                underline,
+            });
         return result.is_ok();
     }
     false
@@ -370,10 +372,12 @@ fn op_fresh_remove_overlay(
 ) -> bool {
     if let Some(runtime_state) = state.try_borrow::<Rc<RefCell<TsRuntimeState>>>() {
         let runtime_state = runtime_state.borrow();
-        let result = runtime_state.command_sender.send(PluginCommand::RemoveOverlay {
-            buffer_id: BufferId(buffer_id as usize),
-            overlay_id,
-        });
+        let result = runtime_state
+            .command_sender
+            .send(PluginCommand::RemoveOverlay {
+                buffer_id: BufferId(buffer_id as usize),
+                overlay_id,
+            });
         return result.is_ok();
     }
     false
@@ -444,14 +448,16 @@ fn op_fresh_add_virtual_text(
 ) -> bool {
     if let Some(runtime_state) = state.try_borrow::<Rc<RefCell<TsRuntimeState>>>() {
         let runtime_state = runtime_state.borrow();
-        let result = runtime_state.command_sender.send(PluginCommand::AddVirtualText {
-            buffer_id: BufferId(buffer_id as usize),
-            virtual_text_id,
-            position: position as usize,
-            text,
-            color: (r, g, b),
-            before,
-        });
+        let result = runtime_state
+            .command_sender
+            .send(PluginCommand::AddVirtualText {
+                buffer_id: BufferId(buffer_id as usize),
+                virtual_text_id,
+                position: position as usize,
+                text,
+                color: (r, g, b),
+                before,
+            });
         return result.is_ok();
     }
     false
@@ -469,10 +475,12 @@ fn op_fresh_remove_virtual_text(
 ) -> bool {
     if let Some(runtime_state) = state.try_borrow::<Rc<RefCell<TsRuntimeState>>>() {
         let runtime_state = runtime_state.borrow();
-        let result = runtime_state.command_sender.send(PluginCommand::RemoveVirtualText {
-            buffer_id: BufferId(buffer_id as usize),
-            virtual_text_id,
-        });
+        let result = runtime_state
+            .command_sender
+            .send(PluginCommand::RemoveVirtualText {
+                buffer_id: BufferId(buffer_id as usize),
+                virtual_text_id,
+            });
         return result.is_ok();
     }
     false
@@ -609,12 +617,7 @@ fn op_fresh_register_command(
 /// @param column - Column number to jump to (0 for no jump)
 /// @returns true if file was opened
 #[op2(fast)]
-fn op_fresh_open_file(
-    state: &mut OpState,
-    #[string] path: String,
-    line: u32,
-    column: u32,
-) -> bool {
+fn op_fresh_open_file(state: &mut OpState, #[string] path: String, line: u32, column: u32) -> bool {
     if let Some(runtime_state) = state.try_borrow::<Rc<RefCell<TsRuntimeState>>>() {
         let runtime_state = runtime_state.borrow();
         let result = runtime_state
@@ -658,12 +661,7 @@ fn op_fresh_get_active_split_id(state: &mut OpState) -> u32 {
 /// @param end - End byte offset (exclusive)
 #[op2]
 #[string]
-fn op_fresh_get_buffer_text(
-    state: &mut OpState,
-    buffer_id: u32,
-    start: u32,
-    end: u32,
-) -> String {
+fn op_fresh_get_buffer_text(state: &mut OpState, buffer_id: u32, start: u32, end: u32) -> String {
     if let Some(runtime_state) = state.try_borrow::<Rc<RefCell<TsRuntimeState>>>() {
         let runtime_state = runtime_state.borrow();
         if let Ok(snapshot) = runtime_state.state_snapshot.read() {
@@ -890,7 +888,11 @@ fn op_fresh_on(
             .entry(event_name.clone())
             .or_insert_with(Vec::new)
             .push(handler_name.clone());
-        tracing::debug!("Registered event handler '{}' for '{}'", handler_name, event_name);
+        tracing::debug!(
+            "Registered event handler '{}' for '{}'",
+            handler_name,
+            event_name
+        );
         return true;
     }
     false
@@ -912,7 +914,11 @@ fn op_fresh_off(
         if let Some(handler_list) = handlers.get_mut(&event_name) {
             if let Some(pos) = handler_list.iter().position(|h| h == &handler_name) {
                 handler_list.remove(pos);
-                tracing::debug!("Unregistered event handler '{}' from '{}'", handler_name, event_name);
+                tracing::debug!(
+                    "Unregistered event handler '{}' from '{}'",
+                    handler_name,
+                    event_name
+                );
                 return true;
             }
         }
@@ -1007,7 +1013,11 @@ fn op_fresh_get_buffer_info(state: &mut OpState, buffer_id: u32) -> Option<TsBuf
             if let Some(info) = snapshot.buffers.get(&BufferId(buffer_id as usize)) {
                 return Some(TsBufferInfo {
                     id: info.id.0 as u32,
-                    path: info.path.as_ref().map(|p| p.to_string_lossy().to_string()).unwrap_or_default(),
+                    path: info
+                        .path
+                        .as_ref()
+                        .map(|p| p.to_string_lossy().to_string())
+                        .unwrap_or_default(),
                     modified: info.modified,
                     length: info.length as u32,
                 });
@@ -1025,12 +1035,20 @@ fn op_fresh_list_buffers(state: &mut OpState) -> Vec<TsBufferInfo> {
     if let Some(runtime_state) = state.try_borrow::<Rc<RefCell<TsRuntimeState>>>() {
         let runtime_state = runtime_state.borrow();
         if let Ok(snapshot) = runtime_state.state_snapshot.read() {
-            return snapshot.buffers.values().map(|info| TsBufferInfo {
-                id: info.id.0 as u32,
-                path: info.path.as_ref().map(|p| p.to_string_lossy().to_string()).unwrap_or_default(),
-                modified: info.modified,
-                length: info.length as u32,
-            }).collect();
+            return snapshot
+                .buffers
+                .values()
+                .map(|info| TsBufferInfo {
+                    id: info.id.0 as u32,
+                    path: info
+                        .path
+                        .as_ref()
+                        .map(|p| p.to_string_lossy().to_string())
+                        .unwrap_or_default(),
+                    modified: info.modified,
+                    length: info.length as u32,
+                })
+                .collect();
         };
     }
     Vec::new()
@@ -1066,13 +1084,17 @@ fn op_fresh_get_all_cursors(state: &mut OpState) -> Vec<TsCursorInfo> {
     if let Some(runtime_state) = state.try_borrow::<Rc<RefCell<TsRuntimeState>>>() {
         let runtime_state = runtime_state.borrow();
         if let Ok(snapshot) = runtime_state.state_snapshot.read() {
-            return snapshot.all_cursors.iter().map(|cursor| TsCursorInfo {
-                position: cursor.position as u32,
-                selection: cursor.selection.as_ref().map(|sel| TsSelectionRange {
-                    start: sel.start as u32,
-                    end: sel.end as u32,
-                }),
-            }).collect();
+            return snapshot
+                .all_cursors
+                .iter()
+                .map(|cursor| TsCursorInfo {
+                    position: cursor.position as u32,
+                    selection: cursor.selection.as_ref().map(|sel| TsSelectionRange {
+                        start: sel.start as u32,
+                        end: sel.end as u32,
+                    }),
+                })
+                .collect();
         };
     }
     Vec::new()
@@ -1126,10 +1148,9 @@ fn op_fresh_start_prompt(
 ) -> bool {
     if let Some(runtime_state) = state.try_borrow::<Rc<RefCell<TsRuntimeState>>>() {
         let runtime_state = runtime_state.borrow();
-        let result = runtime_state.command_sender.send(PluginCommand::StartPrompt {
-            label,
-            prompt_type,
-        });
+        let result = runtime_state
+            .command_sender
+            .send(PluginCommand::StartPrompt { label, prompt_type });
         return result.is_ok();
     }
     false
@@ -1172,12 +1193,10 @@ fn op_fresh_set_prompt_suggestions(
 /// @param path - File path (absolute or relative to cwd)
 #[op2(async)]
 #[string]
-async fn op_fresh_read_file(
-    #[string] path: String,
-) -> Result<String, deno_core::error::AnyError> {
-    tokio::fs::read_to_string(&path)
-        .await
-        .map_err(|e| deno_core::error::generic_error(format!("Failed to read file {}: {}", path, e)))
+async fn op_fresh_read_file(#[string] path: String) -> Result<String, deno_core::error::AnyError> {
+    tokio::fs::read_to_string(&path).await.map_err(|e| {
+        deno_core::error::generic_error(format!("Failed to read file {}: {}", path, e))
+    })
 }
 
 /// Write string content to a file, creating or overwriting
@@ -1191,9 +1210,9 @@ async fn op_fresh_write_file(
     #[string] path: String,
     #[string] content: String,
 ) -> Result<(), deno_core::error::AnyError> {
-    tokio::fs::write(&path, content)
-        .await
-        .map_err(|e| deno_core::error::generic_error(format!("Failed to write file {}: {}", path, e)))
+    tokio::fs::write(&path, content).await.map_err(|e| {
+        deno_core::error::generic_error(format!("Failed to write file {}: {}", path, e))
+    })
 }
 
 /// Check if a path exists (file, directory, or symlink)
@@ -1358,8 +1377,9 @@ struct DirEntry {
 #[op2]
 #[serde]
 fn op_fresh_read_dir(#[string] path: String) -> Result<Vec<DirEntry>, deno_core::error::AnyError> {
-    let entries = std::fs::read_dir(&path)
-        .map_err(|e| deno_core::error::generic_error(format!("Failed to read directory {}: {}", path, e)))?;
+    let entries = std::fs::read_dir(&path).map_err(|e| {
+        deno_core::error::generic_error(format!("Failed to read directory {}: {}", path, e))
+    })?;
 
     let mut result = Vec::new();
     for entry in entries {
@@ -1481,7 +1501,10 @@ async fn op_fresh_create_virtual_buffer_in_split(
             .collect();
 
         // Send command with request_id
-        tracing::trace!("op_create_virtual_buffer_in_split: sending command with request_id={}", request_id);
+        tracing::trace!(
+            "op_create_virtual_buffer_in_split: sending command with request_id={}",
+            request_id
+        );
         runtime_state
             .command_sender
             .send(PluginCommand::CreateVirtualBufferInSplit {
@@ -1632,12 +1655,14 @@ fn op_fresh_define_mode(
 ) -> bool {
     if let Some(runtime_state) = state.try_borrow::<Rc<RefCell<TsRuntimeState>>>() {
         let runtime_state = runtime_state.borrow();
-        let result = runtime_state.command_sender.send(PluginCommand::DefineMode {
-            name,
-            parent,
-            bindings,
-            read_only,
-        });
+        let result = runtime_state
+            .command_sender
+            .send(PluginCommand::DefineMode {
+                name,
+                parent,
+                bindings,
+                read_only,
+            });
         return result.is_ok();
     }
     false
@@ -1650,9 +1675,11 @@ fn op_fresh_define_mode(
 fn op_fresh_show_buffer(state: &mut OpState, buffer_id: u32) -> bool {
     if let Some(runtime_state) = state.try_borrow::<Rc<RefCell<TsRuntimeState>>>() {
         let runtime_state = runtime_state.borrow();
-        let result = runtime_state.command_sender.send(PluginCommand::ShowBuffer {
-            buffer_id: BufferId(buffer_id as usize),
-        });
+        let result = runtime_state
+            .command_sender
+            .send(PluginCommand::ShowBuffer {
+                buffer_id: BufferId(buffer_id as usize),
+            });
         return result.is_ok();
     }
     false
@@ -1665,9 +1692,11 @@ fn op_fresh_show_buffer(state: &mut OpState, buffer_id: u32) -> bool {
 fn op_fresh_close_buffer(state: &mut OpState, buffer_id: u32) -> bool {
     if let Some(runtime_state) = state.try_borrow::<Rc<RefCell<TsRuntimeState>>>() {
         let runtime_state = runtime_state.borrow();
-        let result = runtime_state.command_sender.send(PluginCommand::CloseBuffer {
-            buffer_id: BufferId(buffer_id as usize),
-        });
+        let result = runtime_state
+            .command_sender
+            .send(PluginCommand::CloseBuffer {
+                buffer_id: BufferId(buffer_id as usize),
+            });
         return result.is_ok();
     }
     false
@@ -1680,9 +1709,11 @@ fn op_fresh_close_buffer(state: &mut OpState, buffer_id: u32) -> bool {
 fn op_fresh_focus_split(state: &mut OpState, split_id: u32) -> bool {
     if let Some(runtime_state) = state.try_borrow::<Rc<RefCell<TsRuntimeState>>>() {
         let runtime_state = runtime_state.borrow();
-        let result = runtime_state.command_sender.send(PluginCommand::FocusSplit {
-            split_id: crate::event::SplitId(split_id as usize),
-        });
+        let result = runtime_state
+            .command_sender
+            .send(PluginCommand::FocusSplit {
+                split_id: crate::event::SplitId(split_id as usize),
+            });
         return result.is_ok();
     }
     false
@@ -1696,10 +1727,12 @@ fn op_fresh_focus_split(state: &mut OpState, split_id: u32) -> bool {
 fn op_fresh_set_split_buffer(state: &mut OpState, split_id: u32, buffer_id: u32) -> bool {
     if let Some(runtime_state) = state.try_borrow::<Rc<RefCell<TsRuntimeState>>>() {
         let runtime_state = runtime_state.borrow();
-        let result = runtime_state.command_sender.send(PluginCommand::SetSplitBuffer {
-            split_id: crate::event::SplitId(split_id as usize),
-            buffer_id: BufferId(buffer_id as usize),
-        });
+        let result = runtime_state
+            .command_sender
+            .send(PluginCommand::SetSplitBuffer {
+                split_id: crate::event::SplitId(split_id as usize),
+                buffer_id: BufferId(buffer_id as usize),
+            });
         return result.is_ok();
     }
     false
@@ -1712,9 +1745,11 @@ fn op_fresh_set_split_buffer(state: &mut OpState, split_id: u32, buffer_id: u32)
 fn op_fresh_close_split(state: &mut OpState, split_id: u32) -> bool {
     if let Some(runtime_state) = state.try_borrow::<Rc<RefCell<TsRuntimeState>>>() {
         let runtime_state = runtime_state.borrow();
-        let result = runtime_state.command_sender.send(PluginCommand::CloseSplit {
-            split_id: crate::event::SplitId(split_id as usize),
-        });
+        let result = runtime_state
+            .command_sender
+            .send(PluginCommand::CloseSplit {
+                split_id: crate::event::SplitId(split_id as usize),
+            });
         return result.is_ok();
     }
     false
@@ -1730,7 +1765,10 @@ fn op_fresh_close_split(state: &mut OpState, split_id: u32) -> bool {
 /// }
 #[op2]
 #[serde]
-fn op_fresh_get_text_properties_at_cursor(state: &mut OpState, buffer_id: u32) -> Vec<std::collections::HashMap<String, serde_json::Value>> {
+fn op_fresh_get_text_properties_at_cursor(
+    state: &mut OpState,
+    buffer_id: u32,
+) -> Vec<std::collections::HashMap<String, serde_json::Value>> {
     if let Some(runtime_state) = state.try_borrow::<Rc<RefCell<TsRuntimeState>>>() {
         let runtime_state = runtime_state.borrow();
         if let Ok(snapshot) = runtime_state.state_snapshot.read() {
@@ -1860,7 +1898,9 @@ extension!(
 );
 
 /// Pending response senders type alias for convenience
-pub type PendingResponses = Arc<std::sync::Mutex<HashMap<u64, tokio::sync::oneshot::Sender<crate::plugin_api::PluginResponse>>>>;
+pub type PendingResponses = Arc<
+    std::sync::Mutex<HashMap<u64, tokio::sync::oneshot::Sender<crate::plugin_api::PluginResponse>>>,
+>;
 
 /// TypeScript plugin runtime
 pub struct TypeScriptRuntime {
@@ -2161,7 +2201,11 @@ impl TypeScriptRuntime {
             )
             .map_err(|e| anyhow!("Failed to initialize editor API: {}", e))?;
 
-        Ok(Self { js_runtime, event_handlers, pending_responses })
+        Ok(Self {
+            js_runtime,
+            event_handlers,
+            pending_responses,
+        })
     }
 
     /// Deliver a response to a pending async operation
@@ -2169,7 +2213,9 @@ impl TypeScriptRuntime {
     /// This is called by the editor after processing a command that requires a response.
     pub fn deliver_response(&self, response: crate::plugin_api::PluginResponse) {
         let request_id = match &response {
-            crate::plugin_api::PluginResponse::VirtualBufferCreated { request_id, .. } => *request_id,
+            crate::plugin_api::PluginResponse::VirtualBufferCreated { request_id, .. } => {
+                *request_id
+            }
         };
 
         let sender = {
@@ -2294,8 +2340,9 @@ impl TypeScriptRuntime {
 
                     match dispatcher_val {
                         Some(val) if val.is_function() => {
-                            let dispatcher =
-                                unsafe { deno_core::v8::Local::<deno_core::v8::Function>::cast(val) };
+                            let dispatcher = unsafe {
+                                deno_core::v8::Local::<deno_core::v8::Function>::cast(val)
+                            };
 
                             // Create arguments: handler name and parsed event data
                             let handler_str =
@@ -2431,10 +2478,7 @@ impl TypeScriptPluginManager {
         let state_snapshot = Arc::new(RwLock::new(EditorStateSnapshot::new()));
 
         // Create TypeScript runtime with state
-        let runtime = TypeScriptRuntime::with_state(
-            Arc::clone(&state_snapshot),
-            command_sender,
-        )?;
+        let runtime = TypeScriptRuntime::with_state(Arc::clone(&state_snapshot), command_sender)?;
 
         tracing::info!("TypeScript plugin manager initialized");
 
@@ -2855,7 +2899,11 @@ mod tests {
         let result = runtime
             .execute_script("<test>", "const x = 1 + 1; console.log('Result:', x);")
             .await;
-        assert!(result.is_ok(), "Failed to execute simple script: {:?}", result);
+        assert!(
+            result.is_ok(),
+            "Failed to execute simple script: {:?}",
+            result
+        );
     }
 
     #[tokio::test]
@@ -2936,7 +2984,11 @@ mod tests {
 
         // Execute the async action
         let result = runtime.execute_action("my_async_action").await;
-        assert!(result.is_ok(), "Failed to execute async action: {:?}", result);
+        assert!(
+            result.is_ok(),
+            "Failed to execute async action: {:?}",
+            result
+        );
     }
 
     #[tokio::test]
@@ -3134,7 +3186,11 @@ mod tests {
                 "#,
             )
             .await;
-        assert!(result.is_ok(), "API accessibility test failed: {:?}", result);
+        assert!(
+            result.is_ok(),
+            "API accessibility test failed: {:?}",
+            result
+        );
     }
 
     #[tokio::test]
@@ -3265,7 +3321,10 @@ mod tests {
         match &commands[0] {
             PluginCommand::RegisterCommand { command } => {
                 assert_eq!(command.name, "Global Command");
-                assert!(command.contexts.is_empty(), "Empty string should result in empty contexts");
+                assert!(
+                    command.contexts.is_empty(),
+                    "Empty string should result in empty contexts"
+                );
             }
             _ => panic!("Expected RegisterCommand"),
         }
@@ -3297,13 +3356,27 @@ mod tests {
         match &commands[0] {
             PluginCommand::RegisterCommand { command } => {
                 assert_eq!(command.contexts.len(), 7);
-                assert!(command.contexts.contains(&crate::keybindings::KeyContext::Global));
-                assert!(command.contexts.contains(&crate::keybindings::KeyContext::Normal));
-                assert!(command.contexts.contains(&crate::keybindings::KeyContext::Help));
-                assert!(command.contexts.contains(&crate::keybindings::KeyContext::Prompt));
-                assert!(command.contexts.contains(&crate::keybindings::KeyContext::Popup));
-                assert!(command.contexts.contains(&crate::keybindings::KeyContext::FileExplorer));
-                assert!(command.contexts.contains(&crate::keybindings::KeyContext::Menu));
+                assert!(command
+                    .contexts
+                    .contains(&crate::keybindings::KeyContext::Global));
+                assert!(command
+                    .contexts
+                    .contains(&crate::keybindings::KeyContext::Normal));
+                assert!(command
+                    .contexts
+                    .contains(&crate::keybindings::KeyContext::Help));
+                assert!(command
+                    .contexts
+                    .contains(&crate::keybindings::KeyContext::Prompt));
+                assert!(command
+                    .contexts
+                    .contains(&crate::keybindings::KeyContext::Popup));
+                assert!(command
+                    .contexts
+                    .contains(&crate::keybindings::KeyContext::FileExplorer));
+                assert!(command
+                    .contexts
+                    .contains(&crate::keybindings::KeyContext::Menu));
             }
             _ => panic!("Expected RegisterCommand"),
         }
@@ -3336,8 +3409,12 @@ mod tests {
             PluginCommand::RegisterCommand { command } => {
                 // Only normal and popup should be recognized
                 assert_eq!(command.contexts.len(), 2);
-                assert!(command.contexts.contains(&crate::keybindings::KeyContext::Normal));
-                assert!(command.contexts.contains(&crate::keybindings::KeyContext::Popup));
+                assert!(command
+                    .contexts
+                    .contains(&crate::keybindings::KeyContext::Normal));
+                assert!(command
+                    .contexts
+                    .contains(&crate::keybindings::KeyContext::Popup));
             }
             _ => panic!("Expected RegisterCommand"),
         }
@@ -3453,9 +3530,15 @@ mod tests {
         match &commands[0] {
             PluginCommand::RegisterCommand { command } => {
                 assert_eq!(command.contexts.len(), 3);
-                assert!(command.contexts.contains(&crate::keybindings::KeyContext::Normal));
-                assert!(command.contexts.contains(&crate::keybindings::KeyContext::Popup));
-                assert!(command.contexts.contains(&crate::keybindings::KeyContext::FileExplorer));
+                assert!(command
+                    .contexts
+                    .contains(&crate::keybindings::KeyContext::Normal));
+                assert!(command
+                    .contexts
+                    .contains(&crate::keybindings::KeyContext::Popup));
+                assert!(command
+                    .contexts
+                    .contains(&crate::keybindings::KeyContext::FileExplorer));
             }
             _ => panic!("Expected RegisterCommand"),
         }
@@ -3860,11 +3943,7 @@ mod tests {
                 "#,
             )
             .await;
-        assert!(
-            result.is_ok(),
-            "Path is absolute test failed: {:?}",
-            result
-        );
+        assert!(result.is_ok(), "Path is absolute test failed: {:?}", result);
     }
 
     #[tokio::test]
@@ -4267,15 +4346,18 @@ mod tests {
         let mut manager = TypeScriptPluginManager::new(hooks, commands).unwrap();
 
         // Register a hook handler via the runtime
-        let setup = manager.runtime.execute_script(
-            "<test_hook_setup>",
-            r#"
+        let setup = manager
+            .runtime
+            .execute_script(
+                "<test_hook_setup>",
+                r#"
             globalThis.onBufferActivated = function(data) {
                 editor.setStatus("Buffer " + data.buffer_id + " activated");
             };
             editor.on("buffer_activated", "onBufferActivated");
             "#,
-        ).await;
+            )
+            .await;
         assert!(setup.is_ok(), "Setup failed: {:?}", setup);
 
         // Clear any setup commands
@@ -4396,7 +4478,7 @@ mod tests {
             per_line_us
         );
     }
-    
+
     #[tokio::test]
     async fn test_ts_plugin_manager_load_plugin_with_import_error() {
         // Initialize tracing subscriber for detailed logging
@@ -4493,7 +4575,11 @@ mod tests {
 
         // Load the plugin - this should succeed
         let result = manager.load_plugin(&plugin_path).await;
-        assert!(result.is_ok(), "Failed to load plugin with valid import: {:?}", result);
+        assert!(
+            result.is_ok(),
+            "Failed to load plugin with valid import: {:?}",
+            result
+        );
 
         // Check that the status was set with the imported message
         let cmds = manager.process_commands();
@@ -4603,9 +4689,9 @@ mod tests {
 
     #[test]
     fn test_plugin_thread_execute_git_log_action() {
-        use crate::plugin_thread::PluginThreadHandle;
-        use crate::plugin_api::PluginCommand;
         use crate::event::BufferId;
+        use crate::plugin_api::PluginCommand;
+        use crate::plugin_thread::PluginThreadHandle;
 
         // Initialize tracing subscriber for detailed logging
         let _ = tracing_subscriber::fmt()
@@ -4624,7 +4710,11 @@ mod tests {
 
         // Load the plugin
         let result = handle.load_plugin(&plugin_path);
-        assert!(result.is_ok(), "Failed to load git_log plugin: {:?}", result);
+        assert!(
+            result.is_ok(),
+            "Failed to load git_log plugin: {:?}",
+            result
+        );
 
         eprintln!("Git log plugin loaded, now executing show_git_log action...");
 
@@ -4641,8 +4731,14 @@ mod tests {
             let cmds = handle.process_commands();
             for cmd in cmds {
                 match cmd {
-                    PluginCommand::CreateVirtualBufferInSplit { request_id: Some(req_id), .. } => {
-                        eprintln!("Received CreateVirtualBufferInSplit with request_id={}", req_id);
+                    PluginCommand::CreateVirtualBufferInSplit {
+                        request_id: Some(req_id),
+                        ..
+                    } => {
+                        eprintln!(
+                            "Received CreateVirtualBufferInSplit with request_id={}",
+                            req_id
+                        );
                         let response = crate::plugin_api::PluginResponse::VirtualBufferCreated {
                             request_id: req_id,
                             buffer_id: BufferId(100),
@@ -4722,7 +4818,11 @@ mod tests {
 
         // Load the plugin
         let result = handle.load_plugin(&plugin_path);
-        assert!(result.is_ok(), "Failed to load spawn test plugin: {:?}", result);
+        assert!(
+            result.is_ok(),
+            "Failed to load spawn test plugin: {:?}",
+            result
+        );
 
         eprintln!("Spawn test plugin loaded, now executing test_spawn action...");
 
@@ -4802,7 +4902,11 @@ mod tests {
 
         // Load the plugin
         let result = handle.load_plugin(&plugin_path);
-        assert!(result.is_ok(), "Failed to load git test plugin: {:?}", result);
+        assert!(
+            result.is_ok(),
+            "Failed to load git test plugin: {:?}",
+            result
+        );
 
         eprintln!("Git test plugin loaded, now executing test_git action...");
 
@@ -4843,9 +4947,9 @@ mod tests {
 
     #[test]
     fn test_plugin_thread_create_virtual_buffer_async() {
-        use crate::plugin_thread::PluginThreadHandle;
-        use crate::plugin_api::PluginCommand;
         use crate::event::BufferId;
+        use crate::plugin_api::PluginCommand;
+        use crate::plugin_thread::PluginThreadHandle;
         use tempfile::TempDir;
 
         // Initialize tracing subscriber for detailed logging
@@ -4893,7 +4997,11 @@ mod tests {
 
         // Load the plugin
         let result = handle.load_plugin(&plugin_path);
-        assert!(result.is_ok(), "Failed to load vbuf test plugin: {:?}", result);
+        assert!(
+            result.is_ok(),
+            "Failed to load vbuf test plugin: {:?}",
+            result
+        );
 
         eprintln!("VBuf test plugin loaded, now executing test_vbuf action...");
         eprintln!("Using async pattern to avoid deadlock");
@@ -4911,8 +5019,14 @@ mod tests {
             let cmds = handle.process_commands();
             for cmd in cmds {
                 match cmd {
-                    PluginCommand::CreateVirtualBufferInSplit { request_id: Some(req_id), .. } => {
-                        eprintln!("Received CreateVirtualBufferInSplit with request_id={}", req_id);
+                    PluginCommand::CreateVirtualBufferInSplit {
+                        request_id: Some(req_id),
+                        ..
+                    } => {
+                        eprintln!(
+                            "Received CreateVirtualBufferInSplit with request_id={}",
+                            req_id
+                        );
                         // Deliver a fake response (in real editor, this would be the actual buffer_id)
                         let response = crate::plugin_api::PluginResponse::VirtualBufferCreated {
                             request_id: req_id,
@@ -4957,4 +5071,3 @@ mod tests {
         handle.shutdown();
     }
 }
-

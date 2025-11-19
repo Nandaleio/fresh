@@ -1,6 +1,6 @@
 //! Menu bar rendering
 
-use crate::config::{Menu, MenuItem, MenuConfig};
+use crate::config::{Menu, MenuConfig, MenuItem};
 use crate::theme::Theme;
 use ratatui::layout::Rect;
 use ratatui::style::{Modifier, Style};
@@ -78,7 +78,10 @@ impl MenuState {
     }
 
     /// Get the currently highlighted action (if any)
-    pub fn get_highlighted_action(&self, menus: &[Menu]) -> Option<(String, std::collections::HashMap<String, serde_json::Value>)> {
+    pub fn get_highlighted_action(
+        &self,
+        menus: &[Menu],
+    ) -> Option<(String, std::collections::HashMap<String, serde_json::Value>)> {
         let active_menu = self.active_menu?;
         let highlighted_item = self.highlighted_item?;
 
@@ -132,7 +135,6 @@ impl MenuState {
     }
 }
 
-
 /// Renders the menu bar
 pub struct MenuRenderer;
 
@@ -180,9 +182,7 @@ impl MenuRenderer {
                     .fg(theme.menu_hover_fg)
                     .bg(theme.menu_hover_bg)
             } else {
-                Style::default()
-                    .fg(theme.menu_fg)
-                    .bg(theme.menu_bg)
+                Style::default().fg(theme.menu_fg).bg(theme.menu_bg)
             };
 
             // Check for mnemonic character (Alt+letter keybinding)
@@ -645,7 +645,10 @@ mod tests {
             _ => panic!("Expected Action"),
         }
 
-        assert!(matches!(config.menus[0].items[1], MenuItem::Separator { .. }));
+        assert!(matches!(
+            config.menus[0].items[1],
+            MenuItem::Separator { .. }
+        ));
 
         match &config.menus[0].items[2] {
             MenuItem::Action { label, action, .. } => {
@@ -666,7 +669,12 @@ mod tests {
 
         let item: MenuItem = serde_json::from_str(json).unwrap();
         match item {
-            MenuItem::Action { label, action, args, .. } => {
+            MenuItem::Action {
+                label,
+                action,
+                args,
+                ..
+            } => {
                 assert_eq!(label, "Go to Line");
                 assert_eq!(action, "goto_line");
                 assert_eq!(args.get("line").unwrap().as_i64(), Some(42));
@@ -706,5 +714,3 @@ mod tests {
         assert_eq!(resolver.find_menu_mnemonic("NonExistent"), None);
     }
 }
-
-

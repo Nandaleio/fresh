@@ -26,8 +26,8 @@ pub fn compute_tab_scroll_offset(
         return 0;
     }
 
-    let total_width: usize =
-        tab_widths.iter().sum::<usize>() + padding_between_tabs.saturating_mul(tab_widths.len().saturating_sub(1));
+    let total_width: usize = tab_widths.iter().sum::<usize>()
+        + padding_between_tabs.saturating_mul(tab_widths.len().saturating_sub(1));
     let mut tab_start = 0usize;
     let mut tab_end = 0usize;
 
@@ -162,7 +162,10 @@ impl TabsRenderer {
 
             // Add a small separator between tabs if it's not the last tab
             if idx < split_buffers.len() - 1 {
-                all_tab_spans.push((Span::styled(" ", Style::default().bg(theme.tab_separator_bg)), 1));
+                all_tab_spans.push((
+                    Span::styled(" ", Style::default().bg(theme.tab_separator_bg)),
+                    1,
+                ));
             }
         }
 
@@ -191,7 +194,8 @@ impl TabsRenderer {
         // Indicators reserve space; adjust once so the active tab still fits.
         let mut show_left = offset > 0;
         let mut show_right = total_width.saturating_sub(offset) > max_width;
-        let mut available = max_width.saturating_sub((show_left as usize + show_right as usize) * SCROLL_INDICATOR_WIDTH);
+        let mut available = max_width
+            .saturating_sub((show_left as usize + show_right as usize) * SCROLL_INDICATOR_WIDTH);
 
         if let Some(active_idx) = active_tab_idx {
             let (start, end) = tab_ranges[active_idx];
@@ -207,7 +211,9 @@ impl TabsRenderer {
                 offset = offset.min(total_width.saturating_sub(available));
                 show_left = offset > 0;
                 show_right = total_width.saturating_sub(offset) > available;
-                available = max_width.saturating_sub((show_left as usize + show_right as usize) * SCROLL_INDICATOR_WIDTH);
+                available = max_width.saturating_sub(
+                    (show_left as usize + show_right as usize) * SCROLL_INDICATOR_WIDTH,
+                );
             }
             if start < offset {
                 offset = start;
@@ -220,7 +226,10 @@ impl TabsRenderer {
         let mut skip_chars_count = offset;
 
         if show_left {
-            current_spans.push(Span::styled(SCROLL_INDICATOR_LEFT, Style::default().bg(theme.tab_separator_bg)));
+            current_spans.push(Span::styled(
+                SCROLL_INDICATOR_LEFT,
+                Style::default().bg(theme.tab_separator_bg),
+            ));
             rendered_width += SCROLL_INDICATOR_WIDTH;
         }
 
@@ -231,21 +240,37 @@ impl TabsRenderer {
             }
 
             let visible_chars_in_span = width - skip_chars_count;
-            if rendered_width + visible_chars_in_span > max_width.saturating_sub(if show_right {
-                SCROLL_INDICATOR_WIDTH
-            } else {
-                0
-            }) {
-                let remaining_width = max_width
-                    .saturating_sub(rendered_width)
-                    .saturating_sub(if show_right { SCROLL_INDICATOR_WIDTH } else { 0 });
-                let truncated_content = span.content.chars().skip(skip_chars_count).take(remaining_width).collect::<String>();
+            if rendered_width + visible_chars_in_span
+                > max_width.saturating_sub(if show_right {
+                    SCROLL_INDICATOR_WIDTH
+                } else {
+                    0
+                })
+            {
+                let remaining_width =
+                    max_width
+                        .saturating_sub(rendered_width)
+                        .saturating_sub(if show_right {
+                            SCROLL_INDICATOR_WIDTH
+                        } else {
+                            0
+                        });
+                let truncated_content = span
+                    .content
+                    .chars()
+                    .skip(skip_chars_count)
+                    .take(remaining_width)
+                    .collect::<String>();
                 span.content = std::borrow::Cow::Owned(truncated_content);
                 current_spans.push(span);
                 rendered_width += remaining_width;
                 break;
             } else {
-                let visible_content = span.content.chars().skip(skip_chars_count).collect::<String>();
+                let visible_content = span
+                    .content
+                    .chars()
+                    .skip(skip_chars_count)
+                    .collect::<String>();
                 span.content = std::borrow::Cow::Owned(visible_content);
                 current_spans.push(span);
                 rendered_width += visible_chars_in_span;
@@ -254,7 +279,10 @@ impl TabsRenderer {
         }
 
         if show_right && rendered_width < max_width {
-            current_spans.push(Span::styled(SCROLL_INDICATOR_RIGHT, Style::default().bg(theme.tab_separator_bg)));
+            current_spans.push(Span::styled(
+                SCROLL_INDICATOR_RIGHT,
+                Style::default().bg(theme.tab_separator_bg),
+            ));
             rendered_width += SCROLL_INDICATOR_WIDTH;
         }
 

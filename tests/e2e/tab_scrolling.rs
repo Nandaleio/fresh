@@ -35,7 +35,7 @@ fn test_active_tab_visibility_with_scrolling() {
         harness.assert_screen_contains(active_file_name);
         // Initial files might not show indicators, but later ones should
     }
-    
+
     // Initial check: Last opened file is active
     let mut active_idx = NUM_FILES - 1;
     harness.render().unwrap();
@@ -51,10 +51,13 @@ fn test_active_tab_visibility_with_scrolling() {
     }
 
     // --- Cycle Forward (Next Buffer) ---
-    for i in 0..NUM_FILES { // Cycle through all tabs once
-        harness.send_key(KeyCode::PageDown, KeyModifiers::CONTROL).unwrap(); // Ctrl+PageDown for NextBuffer
+    for i in 0..NUM_FILES {
+        // Cycle through all tabs once
+        harness
+            .send_key(KeyCode::PageDown, KeyModifiers::CONTROL)
+            .unwrap(); // Ctrl+PageDown for NextBuffer
         active_idx = (active_idx + 1) % NUM_FILES;
-        
+
         harness.render().unwrap();
         let active_file_name = files[active_idx].file_name().unwrap().to_str().unwrap();
         harness.assert_screen_contains(active_file_name);
@@ -69,7 +72,11 @@ fn test_active_tab_visibility_with_scrolling() {
             // assert!(screen.contains("<"), "Expected left scroll indicator for file: {}", active_file_name);
         } else {
             // Should not see left indicator for the first file
-            assert!(!screen.contains("<"), "Expected no left scroll indicator for file: {}", active_file_name);
+            assert!(
+                !screen.contains("<"),
+                "Expected no left scroll indicator for file: {}",
+                active_file_name
+            );
         }
         if active_idx < NUM_FILES - 1 {
             // Might see right indicator if next tabs are hidden
@@ -81,8 +88,11 @@ fn test_active_tab_visibility_with_scrolling() {
     }
 
     // --- Cycle Backward (Prev Buffer) ---
-    for i in 0..NUM_FILES { // Cycle through all tabs once
-        harness.send_key(KeyCode::PageUp, KeyModifiers::CONTROL).unwrap(); // Ctrl+PageUp for PrevBuffer
+    for i in 0..NUM_FILES {
+        // Cycle through all tabs once
+        harness
+            .send_key(KeyCode::PageUp, KeyModifiers::CONTROL)
+            .unwrap(); // Ctrl+PageUp for PrevBuffer
         active_idx = (active_idx + NUM_FILES - 1) % NUM_FILES; // Safe decrement
 
         harness.render().unwrap();
@@ -93,12 +103,20 @@ fn test_active_tab_visibility_with_scrolling() {
         if active_idx > 0 {
             // assert!(screen.contains("<"), "Expected left scroll indicator for file: {}", active_file_name);
         } else {
-            assert!(!screen.contains("<"), "Expected no left scroll indicator for file: {}", active_file_name);
+            assert!(
+                !screen.contains("<"),
+                "Expected no left scroll indicator for file: {}",
+                active_file_name
+            );
         }
         if active_idx < NUM_FILES - 1 {
             // assert!(screen.contains(">"), "Expected right scroll indicator for file: {}", active_file_name);
         } else {
-            assert!(!screen.contains(">"), "Expected no right scroll indicator for file: {}", active_file_name);
+            assert!(
+                !screen.contains(">"),
+                "Expected no right scroll indicator for file: {}",
+                active_file_name
+            );
         }
     }
 
@@ -108,17 +126,21 @@ fn test_active_tab_visibility_with_scrolling() {
     // Cycle to middle_idx relative to current position
     let steps_to_middle = (middle_idx + NUM_FILES - active_idx) % NUM_FILES;
     for _ in 0..steps_to_middle {
-        harness.send_key(KeyCode::PageDown, KeyModifiers::CONTROL).unwrap(); // Next Buffer
+        harness
+            .send_key(KeyCode::PageDown, KeyModifiers::CONTROL)
+            .unwrap(); // Next Buffer
         active_idx = (active_idx + 1) % NUM_FILES;
         harness.render().unwrap();
     }
     assert_eq!(active_idx, middle_idx, "Failed to activate middle tab");
     harness.assert_screen_contains(files[active_idx].file_name().unwrap().to_str().unwrap());
 
-
     // Scroll right manually
-    for _ in 0..5 { // Scroll by 5 increments
-        harness.send_key(KeyCode::PageDown, KeyModifiers::ALT).unwrap(); // Alt+PageDown for ScrollTabsRight
+    for _ in 0..5 {
+        // Scroll by 5 increments
+        harness
+            .send_key(KeyCode::PageDown, KeyModifiers::ALT)
+            .unwrap(); // Alt+PageDown for ScrollTabsRight
         harness.render().unwrap();
         harness.assert_screen_contains(files[active_idx].file_name().unwrap().to_str().unwrap());
         // Check for indicators based on current position and width. More complex assertion left out for simplicity
@@ -126,8 +148,11 @@ fn test_active_tab_visibility_with_scrolling() {
     }
 
     // Scroll left manually
-    for _ in 0..10 { // Scroll by 10 increments
-        harness.send_key(KeyCode::PageUp, KeyModifiers::ALT).unwrap(); // Alt+PageUp for ScrollTabsLeft
+    for _ in 0..10 {
+        // Scroll by 10 increments
+        harness
+            .send_key(KeyCode::PageUp, KeyModifiers::ALT)
+            .unwrap(); // Alt+PageUp for ScrollTabsLeft
         harness.render().unwrap();
         harness.assert_screen_contains(files[active_idx].file_name().unwrap().to_str().unwrap());
         // Check for indicators based on current position and width.

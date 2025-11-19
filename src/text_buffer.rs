@@ -2521,13 +2521,22 @@ mod tests {
 
         // Simulate rename: delete "val" at position 23 (line 1, char 4) and insert "value"
         // Position 23 = line 1, char 4; Position 26 = line 1, char 7
-        buffer.delete_range(Position { line: 1, column: 4 }, Position { line: 1, column: 7 });
-        buffer.insert_bytes(23, b"value".to_vec());  // Insert "value"
+        buffer.delete_range(
+            Position { line: 1, column: 4 },
+            Position { line: 1, column: 7 },
+        );
+        buffer.insert_bytes(23, b"value".to_vec()); // Insert "value"
 
         // Also rename the first occurrence
         // Position 7 = line 0, char 7; Position 10 = line 0, char 10
-        buffer.delete_range(Position { line: 0, column: 7 }, Position { line: 0, column: 10 });
-        buffer.insert_bytes(7, b"value".to_vec());  // Insert "value"
+        buffer.delete_range(
+            Position { line: 0, column: 7 },
+            Position {
+                line: 0,
+                column: 10,
+            },
+        );
+        buffer.insert_bytes(7, b"value".to_vec()); // Insert "value"
 
         // Buffer is now: "fn foo(value: i32) {\n    value + 1\n}\n"
         let content = String::from_utf8_lossy(&buffer.get_all_text()).to_string();
@@ -2540,8 +2549,14 @@ mod tests {
 
         // The workaround in position_to_lsp_position should give correct result
         let (line, char) = buffer.position_to_lsp_position(25);
-        assert_eq!(line, 1, "After modification: position 25 should be on line 1");
-        assert_eq!(char, 4, "After modification: position 25 should be at char 4");
+        assert_eq!(
+            line, 1,
+            "After modification: position 25 should be on line 1"
+        );
+        assert_eq!(
+            char, 4,
+            "After modification: position 25 should be at char 4"
+        );
 
         // Also verify position 21 (start of line 1) works
         let (line, char) = buffer.position_to_lsp_position(21);

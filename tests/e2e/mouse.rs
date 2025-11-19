@@ -204,7 +204,9 @@ fn test_mouse_click_switches_split_focus() {
         .unwrap();
     harness.render().unwrap();
     harness.type_text("split vert").unwrap();
-    harness.send_key(KeyCode::Enter, KeyModifiers::NONE).unwrap();
+    harness
+        .send_key(KeyCode::Enter, KeyModifiers::NONE)
+        .unwrap();
 
     harness.render().unwrap();
 
@@ -647,7 +649,10 @@ fn test_scrollbar_drag_updates_cursor_position() {
     println!("  Cursor position: {cursor_pos_after_drag} bytes");
     println!("  Top line: {top_line_after_drag}");
     println!("  Top byte: {top_byte_after_drag}");
-    println!("  Viewport scrolled by: {} lines", top_line_after_drag - initial_top_line);
+    println!(
+        "  Viewport scrolled by: {} lines",
+        top_line_after_drag - initial_top_line
+    );
 
     // VERIFY: Viewport should have scrolled down
     assert!(
@@ -716,7 +721,12 @@ fn test_scrollbar_drag_to_absolute_bottom() {
     // Drag scrollbar from top to absolute bottom
     println!("\nDragging scrollbar from row {content_first_row} to row {scrollbar_bottom_row}");
     harness
-        .mouse_drag(79, content_first_row as u16, 79, scrollbar_bottom_row as u16)
+        .mouse_drag(
+            79,
+            content_first_row as u16,
+            79,
+            scrollbar_bottom_row as u16,
+        )
         .unwrap();
     harness.render().unwrap();
 
@@ -774,7 +784,9 @@ fn test_horizontal_split_separator_drag_resize() {
         .unwrap();
     harness.render().unwrap();
     harness.type_text("split horiz").unwrap();
-    harness.send_key(KeyCode::Enter, KeyModifiers::NONE).unwrap();
+    harness
+        .send_key(KeyCode::Enter, KeyModifiers::NONE)
+        .unwrap();
     harness.render().unwrap();
 
     // Get the separator info - should have exactly one separator for horizontal split
@@ -847,7 +859,9 @@ fn test_vertical_split_separator_drag_resize() {
         .unwrap();
     harness.render().unwrap();
     harness.type_text("split vert").unwrap();
-    harness.send_key(KeyCode::Enter, KeyModifiers::NONE).unwrap();
+    harness
+        .send_key(KeyCode::Enter, KeyModifiers::NONE)
+        .unwrap();
     harness.render().unwrap();
 
     // Get the separator info - should have exactly one separator for vertical split
@@ -919,7 +933,9 @@ fn test_split_separator_drag_respects_limits() {
         .unwrap();
     harness.render().unwrap();
     harness.type_text("split horiz").unwrap();
-    harness.send_key(KeyCode::Enter, KeyModifiers::NONE).unwrap();
+    harness
+        .send_key(KeyCode::Enter, KeyModifiers::NONE)
+        .unwrap();
     harness.render().unwrap();
 
     let separators = harness.editor().get_separator_areas().to_vec();

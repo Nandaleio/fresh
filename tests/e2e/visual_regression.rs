@@ -192,7 +192,9 @@ fn visual_split_view() {
         .unwrap();
     harness.render().unwrap();
     harness.type_text("split horiz").unwrap();
-    harness.send_key(KeyCode::Enter, KeyModifiers::NONE).unwrap();
+    harness
+        .send_key(KeyCode::Enter, KeyModifiers::NONE)
+        .unwrap();
     harness.render().unwrap();
     harness
         .capture_visual_step(&mut flow, "horizontal_split", "Editor split horizontally")
@@ -1262,7 +1264,9 @@ fn visual_menu_bar() {
         .unwrap();
 
     // Step 2: Activate menu with F10
-    harness.send_key(KeyCode::F(10), KeyModifiers::NONE).unwrap();
+    harness
+        .send_key(KeyCode::F(10), KeyModifiers::NONE)
+        .unwrap();
     harness.render().unwrap();
     harness
         .capture_visual_step(
@@ -1299,9 +1303,7 @@ fn visual_menu_bar() {
         .unwrap();
 
     // Step 5: Navigate within menu (Down arrow)
-    harness
-        .send_key(KeyCode::Down, KeyModifiers::NONE)
-        .unwrap();
+    harness.send_key(KeyCode::Down, KeyModifiers::NONE).unwrap();
     harness.render().unwrap();
     harness
         .capture_visual_step(

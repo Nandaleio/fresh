@@ -243,10 +243,7 @@ impl VirtualTextManager {
             .collect();
 
         // Sort by position, then by priority
-        results.sort_by(|a, b| {
-            a.0.cmp(&b.0)
-                .then_with(|| a.1.priority.cmp(&b.1.priority))
-        });
+        results.sort_by(|a, b| a.0.cmp(&b.0).then_with(|| a.1.priority.cmp(&b.1.priority)));
 
         results
     }
@@ -606,8 +603,12 @@ mod tests {
 
         assert_eq!(at_10.len(), 2);
         // Both at same position, check they have different positions
-        let before = at_10.iter().find(|vt| vt.position == VirtualTextPosition::BeforeChar);
-        let after = at_10.iter().find(|vt| vt.position == VirtualTextPosition::AfterChar);
+        let before = at_10
+            .iter()
+            .find(|vt| vt.position == VirtualTextPosition::BeforeChar);
+        let after = at_10
+            .iter()
+            .find(|vt| vt.position == VirtualTextPosition::AfterChar);
 
         assert!(before.is_some());
         assert!(after.is_some());

@@ -473,7 +473,10 @@ mod tests {
         let quit_pos = results.iter().position(|s| s.text == "Quit").unwrap();
 
         // Most recently used should be first
-        assert!(open_pos < save_pos, "Open File should come before Save File");
+        assert!(
+            open_pos < save_pos,
+            "Open File should come before Save File"
+        );
         assert!(save_pos < quit_pos, "Save File should come before Quit");
     }
 
@@ -487,7 +490,10 @@ mod tests {
         }
 
         // Should be trimmed to MAX_HISTORY_SIZE
-        assert_eq!(registry.command_history.len(), CommandRegistry::MAX_HISTORY_SIZE);
+        assert_eq!(
+            registry.command_history.len(),
+            CommandRegistry::MAX_HISTORY_SIZE
+        );
 
         // Most recent should still be at front
         assert_eq!(registry.history_position("Command 59"), Some(0));
@@ -526,12 +532,24 @@ mod tests {
         let results = registry.filter("", KeyContext::Normal, &keybindings);
 
         let save_pos = results.iter().position(|s| s.text == "Save File").unwrap();
-        let alpha_pos = results.iter().position(|s| s.text == "Alpha Command").unwrap();
-        let zebra_pos = results.iter().position(|s| s.text == "Zebra Command").unwrap();
+        let alpha_pos = results
+            .iter()
+            .position(|s| s.text == "Alpha Command")
+            .unwrap();
+        let zebra_pos = results
+            .iter()
+            .position(|s| s.text == "Zebra Command")
+            .unwrap();
 
         // Used command should be first
-        assert!(save_pos < alpha_pos, "Save File should come before Alpha Command");
+        assert!(
+            save_pos < alpha_pos,
+            "Save File should come before Alpha Command"
+        );
         // Unused commands should be alphabetical
-        assert!(alpha_pos < zebra_pos, "Alpha Command should come before Zebra Command");
+        assert!(
+            alpha_pos < zebra_pos,
+            "Alpha Command should come before Zebra Command"
+        );
     }
 }

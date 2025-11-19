@@ -8,7 +8,7 @@ use crate::event::{CursorId, Event, EventLog, SplitDirection, SplitId};
 use crate::file_tree::{FileTree, FileTreeView};
 use crate::fs::{FsBackend, FsManager, LocalFsBackend};
 use crate::keybindings::{Action, KeyContext, KeybindingResolver};
-use crate::lsp::{LspServerConfig};
+use crate::lsp::LspServerConfig;
 use crate::lsp_diagnostics;
 use crate::lsp_manager::{detect_language, LspManager};
 use crate::multi_cursor::{
@@ -421,7 +421,10 @@ pub struct Editor {
     last_macro_register: Option<char>,
 
     /// Pending plugin action receivers (for async action execution)
-    pending_plugin_actions: Vec<(String, crate::plugin_thread::oneshot::Receiver<anyhow::Result<()>>)>,
+    pending_plugin_actions: Vec<(
+        String,
+        crate::plugin_thread::oneshot::Receiver<anyhow::Result<()>>,
+    )>,
 
     /// Flag set by plugin commands that need a render (e.g., RefreshLines)
     plugin_render_requested: bool,
@@ -519,7 +522,13 @@ struct CachedLayout {
     separator_areas: Vec<(SplitId, SplitDirection, u16, u16, u16)>,
     /// Popup areas for mouse hit testing
     /// (popup_index, rect, inner_rect, scroll_offset, num_items)
-    popup_areas: Vec<(usize, ratatui::layout::Rect, ratatui::layout::Rect, usize, usize)>,
+    popup_areas: Vec<(
+        usize,
+        ratatui::layout::Rect,
+        ratatui::layout::Rect,
+        usize,
+        usize,
+    )>,
     /// Suggestions area for mouse hit testing
     /// (inner_rect, scroll_start_idx, visible_count, total_count)
     suggestions_area: Option<(ratatui::layout::Rect, usize, usize, usize)>,
@@ -742,13 +751,11 @@ impl Editor {
             search_history: {
                 // Load search history from disk if available
                 match crate::input_history::get_search_history_path() {
-                    Ok(path) => {
-                        crate::input_history::InputHistory::load_from_file(&path)
-                            .unwrap_or_else(|e| {
-                                tracing::warn!("Failed to load search history: {}", e);
-                                crate::input_history::InputHistory::new()
-                            })
-                    }
+                    Ok(path) => crate::input_history::InputHistory::load_from_file(&path)
+                        .unwrap_or_else(|e| {
+                            tracing::warn!("Failed to load search history: {}", e);
+                            crate::input_history::InputHistory::new()
+                        }),
                     Err(e) => {
                         tracing::warn!("Could not determine search history path: {}", e);
                         crate::input_history::InputHistory::new()
@@ -758,13 +765,11 @@ impl Editor {
             replace_history: {
                 // Load replace history from disk if available
                 match crate::input_history::get_replace_history_path() {
-                    Ok(path) => {
-                        crate::input_history::InputHistory::load_from_file(&path)
-                            .unwrap_or_else(|e| {
-                                tracing::warn!("Failed to load replace history: {}", e);
-                                crate::input_history::InputHistory::new()
-                            })
-                    }
+                    Ok(path) => crate::input_history::InputHistory::load_from_file(&path)
+                        .unwrap_or_else(|e| {
+                            tracing::warn!("Failed to load replace history: {}", e);
+                            crate::input_history::InputHistory::new()
+                        }),
                     Err(e) => {
                         tracing::warn!("Could not determine replace history path: {}", e);
                         crate::input_history::InputHistory::new()
@@ -862,7 +867,8 @@ impl Editor {
         modifiers: KeyModifiers,
     ) -> Option<String> {
         let mode_name = self.active_buffer_mode()?;
-        self.mode_registry.resolve_keybinding(mode_name, code, modifiers)
+        self.mode_registry
+            .resolve_keybinding(mode_name, code, modifiers)
     }
 
     /// Check if LSP has any active progress tasks (e.g., indexing)
@@ -935,7 +941,9 @@ impl Editor {
                     // No parent means just a filename, use working dir
                     self.working_dir.clone()
                 } else {
-                    parent.canonicalize().unwrap_or_else(|_| parent.to_path_buf())
+                    parent
+                        .canonicalize()
+                        .unwrap_or_else(|_| parent.to_path_buf())
                 };
                 if let Some(filename) = path.file_name() {
                     canonical_parent.join(filename)
@@ -1056,10 +1064,8 @@ impl Editor {
 
                                 // Request pull diagnostics after opening the file
                                 // Get previous result_id if we have one (for incremental updates)
-                                let previous_result_id = self
-                                    .diagnostic_result_ids
-                                    .get(uri.as_str())
-                                    .cloned();
+                                let previous_result_id =
+                                    self.diagnostic_result_ids.get(uri.as_str()).cloned();
                                 let request_id = self.next_lsp_request_id;
                                 self.next_lsp_request_id += 1;
 
@@ -1088,7 +1094,9 @@ impl Editor {
 
                                     // Get buffer line count for range
                                     // LSP uses 0-indexed lines, so last line is line_count - 1
-                                    let (last_line, last_char) = if let Some(state) = self.buffers.get(&self.active_buffer) {
+                                    let (last_line, last_char) = if let Some(state) =
+                                        self.buffers.get(&self.active_buffer)
+                                    {
                                         let line_count = state.buffer.line_count().unwrap_or(1000);
                                         // Use a large character value to include the entire last line
                                         (line_count.saturating_sub(1) as u32, 10000)
@@ -1099,8 +1107,10 @@ impl Editor {
                                     if let Err(e) = client.inlay_hints(
                                         request_id,
                                         uri.clone(),
-                                        0, 0, // start
-                                        last_line, last_char, // end - last line with large char to include all content
+                                        0,
+                                        0, // start
+                                        last_line,
+                                        last_char, // end - last line with large char to include all content
                                     ) {
                                         tracing::debug!(
                                             "Failed to request inlay hints (server may not support): {}",
@@ -1242,7 +1252,8 @@ impl Editor {
             view_state.add_buffer(buffer_id);
         } else {
             // Create view state if it doesn't exist
-            let mut view_state = SplitViewState::with_buffer(self.terminal_width, self.terminal_height, buffer_id);
+            let mut view_state =
+                SplitViewState::with_buffer(self.terminal_width, self.terminal_height, buffer_id);
             view_state.viewport.line_wrap_enabled = self.config.editor.line_wrap;
             self.split_view_states.insert(active_split, view_state);
         }
@@ -1266,8 +1277,7 @@ impl Editor {
             .ok_or_else(|| "Buffer not found".to_string())?;
 
         // Build text and properties from entries
-        let (text, properties) =
-            crate::text_property::TextPropertyManager::from_entries(entries);
+        let (text, properties) = crate::text_property::TextPropertyManager::from_entries(entries);
 
         // Replace buffer content
         let current_len = state.buffer.len();
@@ -1318,7 +1328,9 @@ impl Editor {
         // Update all splits that are showing this buffer to show the replacement
         let splits_to_update = self.split_manager.splits_for_buffer(id);
         for split_id in splits_to_update {
-            let _ = self.split_manager.set_split_buffer(split_id, replacement_buffer);
+            let _ = self
+                .split_manager
+                .set_split_buffer(split_id, replacement_buffer);
         }
 
         self.buffers.remove(&id);
@@ -1537,8 +1549,11 @@ impl Editor {
         ) {
             Ok(new_split_id) => {
                 // Create independent view state for the new split with the current buffer
-                let mut view_state =
-                    SplitViewState::with_buffer(self.terminal_width, self.terminal_height, current_buffer_id);
+                let mut view_state = SplitViewState::with_buffer(
+                    self.terminal_width,
+                    self.terminal_height,
+                    current_buffer_id,
+                );
                 view_state.viewport.line_wrap_enabled = self.config.editor.line_wrap;
                 self.split_view_states.insert(new_split_id, view_state);
                 // Restore the new split's view state to the buffer
@@ -1567,8 +1582,11 @@ impl Editor {
         ) {
             Ok(new_split_id) => {
                 // Create independent view state for the new split with the current buffer
-                let mut view_state =
-                    SplitViewState::with_buffer(self.terminal_width, self.terminal_height, current_buffer_id);
+                let mut view_state = SplitViewState::with_buffer(
+                    self.terminal_width,
+                    self.terminal_height,
+                    current_buffer_id,
+                );
                 view_state.viewport.line_wrap_enabled = self.config.editor.line_wrap;
                 self.split_view_states.insert(new_split_id, view_state);
                 // Restore the new split's view state to the buffer
@@ -1684,7 +1702,9 @@ impl Editor {
 
             if let Some(view_state) = self.split_view_states.get_mut(&split_id) {
                 for (edit_pos, old_len, new_len) in &adjustments {
-                    view_state.cursors.adjust_for_edit(*edit_pos, *old_len, *new_len);
+                    view_state
+                        .cursors
+                        .adjust_for_edit(*edit_pos, *old_len, *new_len);
                 }
             }
         }
@@ -1826,16 +1846,9 @@ impl Editor {
                 self.next_lsp_request_id += 1;
                 self.pending_inlay_hints_request = Some(request_id);
 
-                if let Err(e) = client.inlay_hints(
-                    request_id,
-                    uri.clone(),
-                    0, 0,
-                    last_line, 10000,
-                ) {
-                    tracing::debug!(
-                        "Failed to request inlay hints: {}",
-                        e
-                    );
+                if let Err(e) = client.inlay_hints(request_id, uri.clone(), 0, 0, last_line, 10000)
+                {
+                    tracing::debug!("Failed to request inlay hints: {}", e);
                     self.pending_inlay_hints_request = None;
                 } else {
                     tracing::info!(
@@ -1873,7 +1886,10 @@ impl Editor {
                 // Open the saved config file in a new buffer
                 match self.open_file(&config_path) {
                     Ok(_buffer_id) => {
-                        self.set_status_message(format!("Config saved to {}", config_path.display()));
+                        self.set_status_message(format!(
+                            "Config saved to {}",
+                            config_path.display()
+                        ));
                     }
                     Err(e) => {
                         self.set_status_message(format!("Config saved but failed to open: {}", e));
@@ -2547,7 +2563,11 @@ impl Editor {
                     },
                 ))
             }
-            Event::Delete { range, deleted_text, .. } => {
+            Event::Delete {
+                range,
+                deleted_text,
+                ..
+            } => {
                 // Clear seen_lines for this buffer so lines get re-processed
                 self.seen_lines.remove(&buffer_id);
                 Some((
@@ -2783,7 +2803,11 @@ impl Editor {
 
     /// Save the active buffer
     pub fn save(&mut self) -> io::Result<()> {
-        let path = self.active_state().buffer.file_path().map(|p| p.to_path_buf());
+        let path = self
+            .active_state()
+            .buffer
+            .file_path()
+            .map(|p| p.to_path_buf());
         self.active_state_mut().buffer.save()?;
         self.status_message = Some("Saved".to_string());
 
@@ -2866,7 +2890,8 @@ impl Editor {
 
         // Determine the default text: selection > last history > empty
         let from_history = selected_text.is_none();
-        let default_text = selected_text.or_else(|| self.search_history.last().map(|s| s.to_string()));
+        let default_text =
+            selected_text.or_else(|| self.search_history.last().map(|s| s.to_string()));
 
         // Start the prompt
         self.start_prompt(message, prompt_type);
@@ -2926,7 +2951,11 @@ impl Editor {
         prompt_type: PromptType,
         initial_text: String,
     ) {
-        self.prompt = Some(Prompt::with_initial_text(message, prompt_type, initial_text));
+        self.prompt = Some(Prompt::with_initial_text(
+            message,
+            prompt_type,
+            initial_text,
+        ));
     }
 
     /// Cancel the current prompt and return to normal mode
@@ -3226,7 +3255,11 @@ impl Editor {
                 } => {
                     // Handle pulled diagnostics (LSP 3.17+ pull model)
                     if unchanged {
-                        tracing::debug!("Diagnostics unchanged for {} (result_id: {:?})", uri, result_id);
+                        tracing::debug!(
+                            "Diagnostics unchanged for {} (result_id: {:?})",
+                            uri,
+                            result_id
+                        );
                         // No need to update - diagnostics haven't changed
                     } else {
                         tracing::debug!(
@@ -3257,7 +3290,10 @@ impl Editor {
                                     );
                                 }
                             } else {
-                                tracing::debug!("No buffer found for pulled diagnostic URI: {}", uri);
+                                tracing::debug!(
+                                    "No buffer found for pulled diagnostic URI: {}",
+                                    uri
+                                );
                             }
                         } else {
                             tracing::warn!("Could not parse pulled diagnostic URI: {}", uri);
@@ -3352,8 +3388,10 @@ impl Editor {
                                     if let Err(e) = client.inlay_hints(
                                         request_id,
                                         uri.clone(),
-                                        0, 0,
-                                        last_line, 10000,
+                                        0,
+                                        0,
+                                        last_line,
+                                        10000,
                                     ) {
                                         tracing::debug!(
                                             "Failed to re-request inlay hints for {}: {}",
@@ -3532,18 +3570,22 @@ impl Editor {
                     // Get old status for event
                     let old_status = self.lsp_server_statuses.get(&language).cloned();
                     // Update server status
-                    self.lsp_server_statuses.insert(language.clone(), status.clone());
+                    self.lsp_server_statuses
+                        .insert(language.clone(), status.clone());
                     self.update_lsp_status_from_server_statuses();
 
                     // Handle server crash - trigger auto-restart
                     if status == crate::async_bridge::LspServerStatus::Error {
                         // Only trigger restart if transitioning to error from a running state
-                        let was_running = old_status.map(|s| {
-                            matches!(s,
-                                crate::async_bridge::LspServerStatus::Running |
-                                crate::async_bridge::LspServerStatus::Initializing
-                            )
-                        }).unwrap_or(false);
+                        let was_running = old_status
+                            .map(|s| {
+                                matches!(
+                                    s,
+                                    crate::async_bridge::LspServerStatus::Running
+                                        | crate::async_bridge::LspServerStatus::Initializing
+                                )
+                            })
+                            .unwrap_or(false);
 
                         if was_running {
                             if let Some(lsp) = self.lsp.as_mut() {
@@ -3561,13 +3603,15 @@ impl Editor {
                         crate::async_bridge::LspServerStatus::Error => "error",
                         crate::async_bridge::LspServerStatus::Shutdown => "shutdown",
                     };
-                    let old_status_str = old_status.map(|s| match s {
-                        crate::async_bridge::LspServerStatus::Starting => "starting",
-                        crate::async_bridge::LspServerStatus::Initializing => "initializing",
-                        crate::async_bridge::LspServerStatus::Running => "running",
-                        crate::async_bridge::LspServerStatus::Error => "error",
-                        crate::async_bridge::LspServerStatus::Shutdown => "shutdown",
-                    }).unwrap_or("none");
+                    let old_status_str = old_status
+                        .map(|s| match s {
+                            crate::async_bridge::LspServerStatus::Starting => "starting",
+                            crate::async_bridge::LspServerStatus::Initializing => "initializing",
+                            crate::async_bridge::LspServerStatus::Running => "running",
+                            crate::async_bridge::LspServerStatus::Error => "error",
+                            crate::async_bridge::LspServerStatus::Shutdown => "shutdown",
+                        })
+                        .unwrap_or("none");
                     self.emit_event(
                         crate::control_event::events::LSP_STATUS_CHANGED.name,
                         serde_json::json!({
@@ -3588,12 +3632,21 @@ impl Editor {
         let mut processed_any_commands = false;
         if let Some(ref mut manager) = self.ts_plugin_manager {
             let commands = manager.process_commands();
-            tracing::trace!("process_async_messages: got {} commands from plugin manager", commands.len());
+            tracing::trace!(
+                "process_async_messages: got {} commands from plugin manager",
+                commands.len()
+            );
             if !commands.is_empty() {
-                tracing::trace!("process_plugin_commands: processing {} commands", commands.len());
+                tracing::trace!(
+                    "process_plugin_commands: processing {} commands",
+                    commands.len()
+                );
                 processed_any_commands = true;
                 for command in commands {
-                    tracing::trace!("process_plugin_commands: handling command {:?}", std::mem::discriminant(&command));
+                    tracing::trace!(
+                        "process_plugin_commands: handling command {:?}",
+                        std::mem::discriminant(&command)
+                    );
                     if let Err(e) = self.handle_plugin_command(command) {
                         tracing::error!("Error handling TypeScript plugin command: {}", e);
                     }
@@ -3605,28 +3658,35 @@ impl Editor {
 
         // Process pending plugin action completions
         // Retain only actions that haven't completed yet
-        self.pending_plugin_actions.retain(|(action_name, receiver)| {
-            match receiver.try_recv() {
-                Ok(result) => {
-                    match result {
-                        Ok(()) => {
-                            tracing::info!("Plugin action '{}' executed successfully", action_name);
+        self.pending_plugin_actions
+            .retain(|(action_name, receiver)| {
+                match receiver.try_recv() {
+                    Ok(result) => {
+                        match result {
+                            Ok(()) => {
+                                tracing::info!(
+                                    "Plugin action '{}' executed successfully",
+                                    action_name
+                                );
+                            }
+                            Err(e) => {
+                                tracing::error!("Plugin action '{}' error: {}", action_name, e);
+                            }
                         }
-                        Err(e) => {
-                            tracing::error!("Plugin action '{}' error: {}", action_name, e);
-                        }
+                        false // Remove completed action
                     }
-                    false // Remove completed action
+                    Err(std::sync::mpsc::TryRecvError::Empty) => {
+                        true // Keep pending action
+                    }
+                    Err(std::sync::mpsc::TryRecvError::Disconnected) => {
+                        tracing::error!(
+                            "Plugin thread disconnected during action '{}'",
+                            action_name
+                        );
+                        false // Remove disconnected action
+                    }
                 }
-                Err(std::sync::mpsc::TryRecvError::Empty) => {
-                    true // Keep pending action
-                }
-                Err(std::sync::mpsc::TryRecvError::Disconnected) => {
-                    tracing::error!("Plugin thread disconnected during action '{}'", action_name);
-                    false // Remove disconnected action
-                }
-            }
-        });
+            });
 
         // Process pending LSP server restarts (with exponential backoff)
         if let Some(lsp) = self.lsp.as_mut() {
@@ -3642,7 +3702,9 @@ impl Editor {
                         .iter()
                         .filter_map(|(buf_id, meta)| {
                             if let Some(path) = meta.file_path() {
-                                if crate::lsp_manager::detect_language(path) == Some(language.clone()) {
+                                if crate::lsp_manager::detect_language(path)
+                                    == Some(language.clone())
+                                {
                                     Some((*buf_id, path.clone()))
                                 } else {
                                     None
@@ -3772,14 +3834,15 @@ impl Editor {
 
                 // Store cursor position for this buffer
                 let cursor_pos = state.cursors.primary().position;
-                snapshot.buffer_cursor_positions.insert(*buffer_id, cursor_pos);
+                snapshot
+                    .buffer_cursor_positions
+                    .insert(*buffer_id, cursor_pos);
 
                 // Store text properties if this buffer has any
                 if !state.text_properties.is_empty() {
-                    snapshot.buffer_text_properties.insert(
-                        *buffer_id,
-                        state.text_properties.all().to_vec(),
-                    );
+                    snapshot
+                        .buffer_text_properties
+                        .insert(*buffer_id, state.text_properties.all().to_vec());
                 }
             }
 
@@ -3982,7 +4045,9 @@ impl Editor {
                     let style = Style::default().fg(Color::Rgb(color.0, color.1, color.2));
 
                     // Remove any existing virtual text with this ID first
-                    state.virtual_texts.remove_by_id(&mut state.marker_list, &virtual_text_id);
+                    state
+                        .virtual_texts
+                        .remove_by_id(&mut state.marker_list, &virtual_text_id);
 
                     // Add the new virtual text
                     state.virtual_texts.add_with_id(
@@ -4001,12 +4066,16 @@ impl Editor {
                 virtual_text_id,
             } => {
                 if let Some(state) = self.buffers.get_mut(&buffer_id) {
-                    state.virtual_texts.remove_by_id(&mut state.marker_list, &virtual_text_id);
+                    state
+                        .virtual_texts
+                        .remove_by_id(&mut state.marker_list, &virtual_text_id);
                 }
             }
             PluginCommand::RemoveVirtualTextsByPrefix { buffer_id, prefix } => {
                 if let Some(state) = self.buffers.get_mut(&buffer_id) {
-                    state.virtual_texts.remove_by_prefix(&mut state.marker_list, &prefix);
+                    state
+                        .virtual_texts
+                        .remove_by_prefix(&mut state.marker_list, &prefix);
                 }
             }
             PluginCommand::ClearVirtualTexts { buffer_id } => {
@@ -4223,8 +4292,7 @@ impl Editor {
                 use crate::plugin_api::MenuPosition;
 
                 // Calculate insert index based on position
-                let total_menus =
-                    self.config.menu.menus.len() + self.menu_state.plugin_menus.len();
+                let total_menus = self.config.menu.menus.len() + self.menu_state.plugin_menus.len();
 
                 let insert_idx = match position {
                     MenuPosition::Top => 0,
@@ -4315,11 +4383,7 @@ impl Editor {
                     if menu.items.len() < original_len {
                         tracing::info!("Removed menu item '{}' from '{}'", item_label, menu_label);
                     } else {
-                        tracing::warn!(
-                            "Menu item '{}' not found in '{}'",
-                            item_label,
-                            menu_label
-                        );
+                        tracing::warn!("Menu item '{}' not found in '{}'", item_label, menu_label);
                     }
                 } else {
                     tracing::warn!("Menu '{}' not found for removing item", menu_label);
@@ -4399,7 +4463,8 @@ impl Editor {
                         // Verify the buffer actually exists (defensive check for stale entries)
                         if self.buffers.contains_key(&existing_buffer_id) {
                             // Panel exists, just update its content
-                            if let Err(e) = self.set_virtual_buffer_content(existing_buffer_id, entries)
+                            if let Err(e) =
+                                self.set_virtual_buffer_content(existing_buffer_id, entries)
                             {
                                 tracing::error!("Failed to update panel content: {}", e);
                             } else {
@@ -4411,15 +4476,20 @@ impl Editor {
                             if let Some(&split_id) = splits.first() {
                                 self.split_manager.set_active_split(split_id);
                                 self.active_buffer = existing_buffer_id;
-                                tracing::debug!("Focused split {:?} containing panel buffer", split_id);
+                                tracing::debug!(
+                                    "Focused split {:?} containing panel buffer",
+                                    split_id
+                                );
                             }
 
                             // Send response with existing buffer ID
                             if let Some(req_id) = request_id {
-                                self.send_plugin_response(crate::plugin_api::PluginResponse::VirtualBufferCreated {
-                                    request_id: req_id,
-                                    buffer_id: existing_buffer_id,
-                                });
+                                self.send_plugin_response(
+                                    crate::plugin_api::PluginResponse::VirtualBufferCreated {
+                                        request_id: req_id,
+                                        buffer_id: existing_buffer_id,
+                                    },
+                                );
                             }
                             return Ok(());
                         } else {
@@ -4480,8 +4550,11 @@ impl Editor {
                 ) {
                     Ok(new_split_id) => {
                         // Create independent view state for the new split with the buffer in tabs
-                        let mut view_state =
-                            SplitViewState::with_buffer(self.terminal_width, self.terminal_height, buffer_id);
+                        let mut view_state = SplitViewState::with_buffer(
+                            self.terminal_width,
+                            self.terminal_height,
+                            buffer_id,
+                        );
                         view_state.viewport.line_wrap_enabled = self.config.editor.line_wrap;
                         self.split_view_states.insert(new_split_id, view_state);
 
@@ -4504,10 +4577,12 @@ impl Editor {
                 // Send response with buffer ID
                 if let Some(req_id) = request_id {
                     tracing::trace!("CreateVirtualBufferInSplit: sending response for request_id={}, buffer_id={:?}", req_id, buffer_id);
-                    self.send_plugin_response(crate::plugin_api::PluginResponse::VirtualBufferCreated {
-                        request_id: req_id,
-                        buffer_id,
-                    });
+                    self.send_plugin_response(
+                        crate::plugin_api::PluginResponse::VirtualBufferCreated {
+                            request_id: req_id,
+                            buffer_id,
+                        },
+                    );
                 }
             }
             PluginCommand::SetVirtualBufferContent { buffer_id, entries } => {
@@ -4619,22 +4694,22 @@ impl Editor {
 
                 // Send response with buffer ID
                 if let Some(req_id) = request_id {
-                    self.send_plugin_response(crate::plugin_api::PluginResponse::VirtualBufferCreated {
-                        request_id: req_id,
-                        buffer_id,
-                    });
+                    self.send_plugin_response(
+                        crate::plugin_api::PluginResponse::VirtualBufferCreated {
+                            request_id: req_id,
+                            buffer_id,
+                        },
+                    );
                 }
             }
-            PluginCommand::CloseBuffer { buffer_id } => {
-                match self.close_buffer(buffer_id) {
-                    Ok(()) => {
-                        tracing::info!("Closed buffer {:?}", buffer_id);
-                    }
-                    Err(e) => {
-                        tracing::error!("Failed to close buffer {:?}: {}", buffer_id, e);
-                    }
+            PluginCommand::CloseBuffer { buffer_id } => match self.close_buffer(buffer_id) {
+                Ok(()) => {
+                    tracing::info!("Closed buffer {:?}", buffer_id);
                 }
-            }
+                Err(e) => {
+                    tracing::error!("Failed to close buffer {:?}: {}", buffer_id, e);
+                }
+            },
             PluginCommand::FocusSplit { split_id } => {
                 if self.split_manager.set_active_split(split_id) {
                     // Update active buffer to match the split's buffer
@@ -4646,7 +4721,10 @@ impl Editor {
                     tracing::warn!("Split {:?} not found", split_id);
                 }
             }
-            PluginCommand::SetSplitBuffer { split_id, buffer_id } => {
+            PluginCommand::SetSplitBuffer {
+                split_id,
+                buffer_id,
+            } => {
                 // Verify the buffer exists
                 if !self.buffers.contains_key(&buffer_id) {
                     tracing::error!("Buffer {:?} not found for SetSplitBuffer", buffer_id);
@@ -4924,10 +5002,7 @@ impl Editor {
                         if let Err(e) = handle.cancel_request(request_id) {
                             tracing::warn!("Failed to send LSP cancel request: {}", e);
                         } else {
-                            tracing::debug!(
-                                "Sent $/cancelRequest for request_id={}",
-                                request_id
-                            );
+                            tracing::debug!("Sent $/cancelRequest for request_id={}", request_id);
                         }
                     }
                 }
@@ -5069,12 +5144,8 @@ impl Editor {
                         self.pending_hover_request = Some(request_id);
                         self.lsp_status = "LSP: hover...".to_string();
 
-                        let _ = handle.hover(
-                            request_id,
-                            uri.clone(),
-                            line as u32,
-                            character as u32,
-                        );
+                        let _ =
+                            handle.hover(request_id, uri.clone(), line as u32, character as u32);
                         tracing::info!(
                             "Requested hover at {}:{}:{} (byte_pos={})",
                             uri.as_str(),
@@ -5178,7 +5249,10 @@ impl Editor {
     }
 
     /// Apply inlay hints to editor state as virtual text
-    fn apply_inlay_hints_to_state(state: &mut crate::state::EditorState, hints: &[lsp_types::InlayHint]) {
+    fn apply_inlay_hints_to_state(
+        state: &mut crate::state::EditorState,
+        hints: &[lsp_types::InlayHint],
+    ) {
         use crate::virtual_text::VirtualTextPosition;
         use ratatui::style::{Color, Style};
 
@@ -6003,9 +6077,10 @@ impl Editor {
         // Save cursor position before applying batch
         // The batch will move the cursor to each edit location, but we want to
         // preserve the cursor position (adjusted for edits before it)
-        let state = self.buffers.get(&buffer_id).ok_or_else(|| {
-            io::Error::new(io::ErrorKind::NotFound, "Buffer not found")
-        })?;
+        let state = self
+            .buffers
+            .get(&buffer_id)
+            .ok_or_else(|| io::Error::new(io::ErrorKind::NotFound, "Buffer not found"))?;
         let original_cursor_pos = state.cursors.primary().position;
         let original_cursor_anchor = state.cursors.primary().anchor;
 
@@ -6029,7 +6104,8 @@ impl Editor {
                     Event::Insert { position, text, .. } => {
                         // Only move cursor if insert is STRICTLY BEFORE cursor position
                         // If insert is AT cursor, cursor should stay at start of new text
-                        let adjusted_cursor = (original_cursor_pos as isize + cursor_delta) as usize;
+                        let adjusted_cursor =
+                            (original_cursor_pos as isize + cursor_delta) as usize;
                         if *position < adjusted_cursor {
                             // Insert before cursor - cursor moves forward
                             cursor_delta += text.len() as isize;
@@ -6042,21 +6118,21 @@ impl Editor {
         }
 
         // Apply to buffer state
-        let state = self.buffers.get_mut(&buffer_id).ok_or_else(|| {
-            io::Error::new(io::ErrorKind::NotFound, "Buffer not found")
-        })?;
+        let state = self
+            .buffers
+            .get_mut(&buffer_id)
+            .ok_or_else(|| io::Error::new(io::ErrorKind::NotFound, "Buffer not found"))?;
         state.apply(&batch);
 
         // Restore cursor to adjusted position
         let buffer_len = state.buffer.len();
-        let new_cursor_pos = ((original_cursor_pos as isize + cursor_delta).max(0) as usize)
-            .min(buffer_len);
+        let new_cursor_pos =
+            ((original_cursor_pos as isize + cursor_delta).max(0) as usize).min(buffer_len);
         state.cursors.primary_mut().position = new_cursor_pos;
 
         // Adjust anchor if there was a selection
         if let Some(anchor) = original_cursor_anchor {
-            let new_anchor = ((anchor as isize + cursor_delta).max(0) as usize)
-                .min(buffer_len);
+            let new_anchor = ((anchor as isize + cursor_delta).max(0) as usize).min(buffer_len);
             state.cursors.primary_mut().anchor = Some(new_anchor);
         }
 
@@ -6788,9 +6864,7 @@ impl Editor {
                 );
             }
             Action::Open => self.start_prompt("Find file: ".to_string(), PromptType::OpenFile),
-            Action::GotoLine => {
-                self.start_prompt("Go to line: ".to_string(), PromptType::GotoLine)
-            }
+            Action::GotoLine => self.start_prompt("Go to line: ".to_string(), PromptType::GotoLine),
             Action::New => {
                 self.new_buffer();
             }
@@ -6917,7 +6991,9 @@ impl Editor {
                                         .iter()
                                         .filter_map(|(buf_id, meta)| {
                                             if let Some(p) = meta.file_path() {
-                                                if crate::lsp_manager::detect_language(p) == Some(language.clone()) {
+                                                if crate::lsp_manager::detect_language(p)
+                                                    == Some(language.clone())
+                                                {
                                                     Some((*buf_id, p.clone()))
                                                 } else {
                                                     None
@@ -6931,14 +7007,20 @@ impl Editor {
                                     for (buffer_id, buf_path) in buffers_for_language {
                                         if let Some(state) = self.buffers.get(&buffer_id) {
                                             let content = state.buffer.to_string();
-                                            let uri: Option<lsp_types::Uri> = url::Url::from_file_path(&buf_path)
-                                                .ok()
-                                                .and_then(|u| u.as_str().parse::<lsp_types::Uri>().ok());
+                                            let uri: Option<lsp_types::Uri> =
+                                                url::Url::from_file_path(&buf_path).ok().and_then(
+                                                    |u| u.as_str().parse::<lsp_types::Uri>().ok(),
+                                                );
                                             if let Some(uri) = uri {
-                                                if let Some(lang_id) = crate::lsp_manager::detect_language(&buf_path) {
+                                                if let Some(lang_id) =
+                                                    crate::lsp_manager::detect_language(&buf_path)
+                                                {
                                                     if let Some(lsp) = self.lsp.as_mut() {
-                                                        if let Some(handle) = lsp.get_or_spawn(&lang_id) {
-                                                            let _ = handle.did_open(uri, content, lang_id);
+                                                        if let Some(handle) =
+                                                            lsp.get_or_spawn(&lang_id)
+                                                        {
+                                                            let _ = handle
+                                                                .did_open(uri, content, lang_id);
                                                         }
                                                     }
                                                 }
@@ -6950,10 +7032,12 @@ impl Editor {
                                 self.status_message = Some("No LSP manager available".to_string());
                             }
                         } else {
-                            self.status_message = Some("No LSP server configured for this file type".to_string());
+                            self.status_message =
+                                Some("No LSP server configured for this file type".to_string());
                         }
                     } else {
-                        self.status_message = Some("Current buffer has no associated file".to_string());
+                        self.status_message =
+                            Some("Current buffer has no associated file".to_string());
                     }
                 }
             }
@@ -6965,13 +7049,14 @@ impl Editor {
             }
             Action::Search => {
                 // If already in a search-related prompt, Ctrl+F acts like Enter (confirm search)
-                let is_search_prompt = self
-                    .prompt
-                    .as_ref()
-                    .is_some_and(|p| matches!(
+                let is_search_prompt = self.prompt.as_ref().is_some_and(|p| {
+                    matches!(
                         p.prompt_type,
-                        PromptType::Search | PromptType::ReplaceSearch | PromptType::QueryReplaceSearch
-                    ));
+                        PromptType::Search
+                            | PromptType::ReplaceSearch
+                            | PromptType::QueryReplaceSearch
+                    )
+                });
 
                 if is_search_prompt {
                     self.confirm_prompt();
@@ -7006,7 +7091,11 @@ impl Editor {
                 if let Some(view_state) = self.split_view_states.get_mut(&active_split_id) {
                     view_state.tab_scroll_offset = view_state.tab_scroll_offset.saturating_sub(5);
                     // After manual scroll, re-evaluate to clamp and show indicators
-                    self.ensure_active_tab_visible(active_split_id, self.active_buffer, self.terminal_width);
+                    self.ensure_active_tab_visible(
+                        active_split_id,
+                        self.active_buffer,
+                        self.terminal_width,
+                    );
                     self.set_status_message("Scrolled tabs left".to_string());
                 }
             }
@@ -7015,7 +7104,11 @@ impl Editor {
                 if let Some(view_state) = self.split_view_states.get_mut(&active_split_id) {
                     view_state.tab_scroll_offset = view_state.tab_scroll_offset.saturating_add(5);
                     // After manual scroll, re-evaluate to clamp and show indicators
-                    self.ensure_active_tab_visible(active_split_id, self.active_buffer, self.terminal_width);
+                    self.ensure_active_tab_visible(
+                        active_split_id,
+                        self.active_buffer,
+                        self.terminal_width,
+                    );
                     self.set_status_message("Scrolled tabs right".to_string());
                 }
             }
@@ -7082,7 +7175,10 @@ impl Editor {
             }
             Action::MenuUp => {
                 if let Some(active_idx) = self.menu_state.active_menu {
-                    let all_menus: Vec<crate::config::Menu> = self.config.menu.menus
+                    let all_menus: Vec<crate::config::Menu> = self
+                        .config
+                        .menu
+                        .menus
                         .iter()
                         .chain(self.menu_state.plugin_menus.iter())
                         .cloned()
@@ -7094,7 +7190,10 @@ impl Editor {
             }
             Action::MenuDown => {
                 if let Some(active_idx) = self.menu_state.active_menu {
-                    let all_menus: Vec<crate::config::Menu> = self.config.menu.menus
+                    let all_menus: Vec<crate::config::Menu> = self
+                        .config
+                        .menu
+                        .menus
                         .iter()
                         .chain(self.menu_state.plugin_menus.iter())
                         .cloned()
@@ -7106,13 +7205,18 @@ impl Editor {
             }
             Action::MenuExecute => {
                 // Execute the highlighted menu item's action
-                let all_menus: Vec<crate::config::Menu> = self.config.menu.menus
+                let all_menus: Vec<crate::config::Menu> = self
+                    .config
+                    .menu
+                    .menus
                     .iter()
                     .chain(self.menu_state.plugin_menus.iter())
                     .cloned()
                     .collect();
 
-                if let Some((action_name, args)) = self.menu_state.get_highlighted_action(&all_menus) {
+                if let Some((action_name, args)) =
+                    self.menu_state.get_highlighted_action(&all_menus)
+                {
                     // Close the menu
                     self.menu_state.close_menu();
 
@@ -7128,7 +7232,10 @@ impl Editor {
             }
             Action::MenuOpen(menu_name) => {
                 // Find the menu by name and open it
-                let all_menus: Vec<crate::config::Menu> = self.config.menu.menus
+                let all_menus: Vec<crate::config::Menu> = self
+                    .config
+                    .menu
+                    .menus
                     .iter()
                     .chain(self.menu_state.plugin_menus.iter())
                     .cloned()
@@ -7241,7 +7348,10 @@ impl Editor {
                 self.start_prompt("Set bookmark (0-9): ".to_string(), PromptType::SetBookmark);
             }
             Action::PromptJumpToBookmark => {
-                self.start_prompt("Jump to bookmark (0-9): ".to_string(), PromptType::JumpToBookmark);
+                self.start_prompt(
+                    "Jump to bookmark (0-9): ".to_string(),
+                    PromptType::JumpToBookmark,
+                );
             }
             Action::None => {}
             Action::DeleteBackward => {
@@ -7275,7 +7385,8 @@ impl Editor {
                     match manager.execute_action_async(&action_name) {
                         Ok(receiver) => {
                             // Store pending action for processing in main loop
-                            self.pending_plugin_actions.push((action_name.clone(), receiver));
+                            self.pending_plugin_actions
+                                .push((action_name.clone(), receiver));
                         }
                         Err(e) => {
                             self.set_status_message(format!("Plugin error: {}", e));
@@ -7371,7 +7482,10 @@ impl Editor {
                                 let cmd_name = cmd.name.clone();
                                 self.set_status_message(format!("Executing: {}", cmd_name));
                                 // Record command usage for history
-                                self.command_registry.write().unwrap().record_usage(&cmd_name);
+                                self.command_registry
+                                    .write()
+                                    .unwrap()
+                                    .record_usage(&cmd_name);
                                 return self.handle_action(action);
                             } else {
                                 self.set_status_message(format!("Unknown command: {input}"));
@@ -7382,24 +7496,32 @@ impl Editor {
                                 Ok(line_num) if line_num > 0 => {
                                     let target_line = line_num.saturating_sub(1);
                                     let buffer_id = self.active_buffer;
-                                    let estimated_line_length = self.config.editor.estimated_line_length;
+                                    let estimated_line_length =
+                                        self.config.editor.estimated_line_length;
 
                                     if let Some(state) = self.buffers.get(&buffer_id) {
                                         let cursor_id = state.cursors.primary_id();
                                         let old_position = state.cursors.primary().position;
                                         let old_anchor = state.cursors.primary().anchor;
-                                        let old_sticky_column = state.cursors.primary().sticky_column;
+                                        let old_sticky_column =
+                                            state.cursors.primary().sticky_column;
                                         let is_large_file = state.buffer.line_count().is_none();
                                         let buffer_len = state.buffer.len();
 
                                         let (position, status_message) = if is_large_file {
                                             // Large file mode: estimate byte offset based on line number
-                                            let estimated_offset = target_line * estimated_line_length;
+                                            let estimated_offset =
+                                                target_line * estimated_line_length;
                                             let clamped_offset = estimated_offset.min(buffer_len);
 
                                             // Use LineIterator to find the actual line start at the estimated position
-                                            let position = if let Some(state) = self.buffers.get_mut(&buffer_id) {
-                                                let iter = state.buffer.line_iterator(clamped_offset, estimated_line_length);
+                                            let position = if let Some(state) =
+                                                self.buffers.get_mut(&buffer_id)
+                                            {
+                                                let iter = state.buffer.line_iterator(
+                                                    clamped_offset,
+                                                    estimated_line_length,
+                                                );
                                                 iter.current_position()
                                             } else {
                                                 clamped_offset
@@ -7412,9 +7534,14 @@ impl Editor {
                                             (position, msg)
                                         } else {
                                             // Small file mode: use exact line position
-                                            let max_line = state.buffer.line_count().unwrap_or(1).saturating_sub(1);
+                                            let max_line = state
+                                                .buffer
+                                                .line_count()
+                                                .unwrap_or(1)
+                                                .saturating_sub(1);
                                             let actual_line = target_line.min(max_line);
-                                            let position = state.buffer.line_col_to_position(actual_line, 0);
+                                            let position =
+                                                state.buffer.line_col_to_position(actual_line, 0);
 
                                             let msg = if target_line > max_line {
                                                 format!(
@@ -7444,10 +7571,15 @@ impl Editor {
                                     }
                                 }
                                 Ok(_) => {
-                                    self.set_status_message("Line number must be positive".to_string());
+                                    self.set_status_message(
+                                        "Line number must be positive".to_string(),
+                                    );
                                 }
                                 Err(_) => {
-                                    self.set_status_message(format!("Invalid line number: {}", input));
+                                    self.set_status_message(format!(
+                                        "Invalid line number: {}",
+                                        input
+                                    ));
                                 }
                             }
                         }
@@ -7456,7 +7588,9 @@ impl Editor {
                                 if c.is_ascii_digit() {
                                     self.toggle_macro_recording(c);
                                 } else {
-                                    self.set_status_message("Macro register must be 0-9".to_string());
+                                    self.set_status_message(
+                                        "Macro register must be 0-9".to_string(),
+                                    );
                                 }
                             } else {
                                 self.set_status_message("No register specified".to_string());
@@ -7467,7 +7601,9 @@ impl Editor {
                                 if c.is_ascii_digit() {
                                     self.play_macro(c);
                                 } else {
-                                    self.set_status_message("Macro register must be 0-9".to_string());
+                                    self.set_status_message(
+                                        "Macro register must be 0-9".to_string(),
+                                    );
                                 }
                             } else {
                                 self.set_status_message("No register specified".to_string());
@@ -7478,7 +7614,9 @@ impl Editor {
                                 if c.is_ascii_digit() {
                                     self.set_bookmark(c);
                                 } else {
-                                    self.set_status_message("Bookmark register must be 0-9".to_string());
+                                    self.set_status_message(
+                                        "Bookmark register must be 0-9".to_string(),
+                                    );
                                 }
                             } else {
                                 self.set_status_message("No register specified".to_string());
@@ -7489,7 +7627,9 @@ impl Editor {
                                 if c.is_ascii_digit() {
                                     self.jump_to_bookmark(c);
                                 } else {
-                                    self.set_status_message("Bookmark register must be 0-9".to_string());
+                                    self.set_status_message(
+                                        "Bookmark register must be 0-9".to_string(),
+                                    );
                                 }
                             } else {
                                 self.set_status_message("No register specified".to_string());
@@ -7852,7 +7992,10 @@ impl Editor {
 
         // Check menu bar (row 0)
         if row == 0 {
-            let all_menus: Vec<crate::config::Menu> = self.config.menu.menus
+            let all_menus: Vec<crate::config::Menu> = self
+                .config
+                .menu
+                .menus
                 .iter()
                 .chain(self.menu_state.plugin_menus.iter())
                 .cloned()
@@ -7866,7 +8009,10 @@ impl Editor {
 
         // Check menu dropdown items if a menu is open
         if let Some(active_idx) = self.menu_state.active_menu {
-            let all_menus: Vec<crate::config::Menu> = self.config.menu.menus
+            let all_menus: Vec<crate::config::Menu> = self
+                .config
+                .menu
+                .menus
                 .iter()
                 .chain(self.menu_state.plugin_menus.iter())
                 .cloned()
@@ -7874,7 +8020,8 @@ impl Editor {
 
             if let Some(menu) = all_menus.get(active_idx) {
                 if let Some(item_idx) = self.menu_state.get_item_at_position(menu, row) {
-                    self.mouse_state.hover_target = Some(HoverTarget::MenuDropdownItem(active_idx, item_idx));
+                    self.mouse_state.hover_target =
+                        Some(HoverTarget::MenuDropdownItem(active_idx, item_idx));
                     return;
                 }
             }
@@ -7892,7 +8039,8 @@ impl Editor {
             };
 
             if is_on_separator {
-                self.mouse_state.hover_target = Some(HoverTarget::SplitSeparator(*split_id, *direction));
+                self.mouse_state.hover_target =
+                    Some(HoverTarget::SplitSeparator(*split_id, *direction));
                 return;
             }
         }
@@ -7979,7 +8127,10 @@ impl Editor {
 
         // Check if click is on menu bar (row 0)
         if row == 0 {
-            let all_menus: Vec<crate::config::Menu> = self.config.menu.menus
+            let all_menus: Vec<crate::config::Menu> = self
+                .config
+                .menu
+                .menus
                 .iter()
                 .chain(self.menu_state.plugin_menus.iter())
                 .cloned()
@@ -8001,7 +8152,10 @@ impl Editor {
 
         // Check if click is on an open menu dropdown
         if let Some(active_idx) = self.menu_state.active_menu {
-            let all_menus: Vec<crate::config::Menu> = self.config.menu.menus
+            let all_menus: Vec<crate::config::Menu> = self
+                .config
+                .menu
+                .menus
                 .iter()
                 .chain(self.menu_state.plugin_menus.iter())
                 .cloned()
@@ -8016,11 +8170,16 @@ impl Editor {
                 }
 
                 // Find the widest item to determine dropdown width
-                let max_label_len = menu.items.iter().map(|item| match item {
-                    crate::config::MenuItem::Action { label, .. } => label.len(),
-                    crate::config::MenuItem::Separator { .. } => 0,
-                    crate::config::MenuItem::Submenu { label, .. } => label.len(),
-                }).max().unwrap_or(0);
+                let max_label_len = menu
+                    .items
+                    .iter()
+                    .map(|item| match item {
+                        crate::config::MenuItem::Action { label, .. } => label.len(),
+                        crate::config::MenuItem::Separator { .. } => 0,
+                        crate::config::MenuItem::Submenu { label, .. } => label.len(),
+                    })
+                    .max()
+                    .unwrap_or(0);
                 let dropdown_width = max_label_len + 30; // Label + padding + keybinding space
 
                 // Dropdown starts at row 1 (below menu bar), with border at row 1
@@ -8028,13 +8187,17 @@ impl Editor {
                 let dropdown_height = menu.items.len() as u16 + 2; // items + top/bottom border
 
                 // Check if click is inside dropdown bounds
-                if col >= menu_x && col < menu_x + dropdown_width as u16
-                    && row >= 1 && row < 1 + dropdown_height
+                if col >= menu_x
+                    && col < menu_x + dropdown_width as u16
+                    && row >= 1
+                    && row < 1 + dropdown_height
                 {
                     // Check if click is on an item (not border)
                     if let Some(item_idx) = self.menu_state.get_item_at_position(menu, row) {
                         // Execute the menu item action
-                        if let Some(crate::config::MenuItem::Action { action, args, .. }) = menu.items.get(item_idx) {
+                        if let Some(crate::config::MenuItem::Action { action, args, .. }) =
+                            menu.items.get(item_idx)
+                        {
                             let action_name = action.clone();
                             let action_args = args.clone();
 
@@ -8922,12 +9085,17 @@ impl Editor {
                     let top_byte = state.viewport.top_byte;
 
                     // Get or create the seen lines set for this buffer
-                    let seen_lines = self.seen_lines.entry(buffer_id).or_insert_with(std::collections::HashSet::new);
+                    let seen_lines = self
+                        .seen_lines
+                        .entry(buffer_id)
+                        .or_insert_with(std::collections::HashSet::new);
 
                     // Collect only NEW lines (not seen before)
                     let mut new_lines: Vec<crate::hooks::LineInfo> = Vec::new();
                     let mut line_number = state.buffer.get_line_number(top_byte);
-                    let mut iter = state.buffer.line_iterator(top_byte, self.config.editor.estimated_line_length);
+                    let mut iter = state
+                        .buffer
+                        .line_iterator(top_byte, self.config.editor.estimated_line_length);
 
                     for _ in 0..visible_count {
                         if let Some((line_start, line_content)) = iter.next() {
@@ -8996,7 +9164,9 @@ impl Editor {
             self.menu_state.active_menu.is_some(),
         );
         self.cached_layout.split_areas = split_areas;
-        self.cached_layout.separator_areas = self.split_manager.get_separators_with_ids(editor_content_area);
+        self.cached_layout.separator_areas = self
+            .split_manager
+            .get_separators_with_ids(editor_content_area);
         self.cached_layout.editor_content_area = Some(editor_content_area);
 
         // Render hover highlights for separators and scrollbars
@@ -9059,12 +9229,7 @@ impl Editor {
 
         // Render prompt line if active
         if let Some(prompt) = &prompt {
-            StatusBarRenderer::render_prompt(
-                frame,
-                main_chunks[prompt_line_idx],
-                prompt,
-                &theme,
-            );
+            StatusBarRenderer::render_prompt(frame, main_chunks[prompt_line_idx], prompt, &theme);
         }
 
         // Render popups from the active buffer state
@@ -9114,7 +9279,13 @@ impl Editor {
                             _ => 0,
                         };
 
-                        (popup_idx, popup_area, inner_area, popup.scroll_offset, num_items)
+                        (
+                            popup_idx,
+                            popup_area,
+                            inner_area,
+                            popup.scroll_offset,
+                            num_items,
+                        )
                     })
                     .collect()
             } else {
@@ -9130,7 +9301,12 @@ impl Editor {
         if state.popups.is_visible() {
             for (popup_idx, popup) in state.popups.all().iter().enumerate() {
                 if let Some((_, popup_area, _, _, _)) = popup_info.get(popup_idx) {
-                    popup.render_with_hover(frame, *popup_area, &theme_clone, hover_target.as_ref());
+                    popup.render_with_hover(
+                        frame,
+                        *popup_area,
+                        &theme_clone,
+                        hover_target.as_ref(),
+                    );
                 }
             }
         }
@@ -9162,7 +9338,8 @@ impl Editor {
                         match dir {
                             SplitDirection::Horizontal => {
                                 let line_text = "─".repeat(*length as usize);
-                                let paragraph = Paragraph::new(Span::styled(line_text, hover_style));
+                                let paragraph =
+                                    Paragraph::new(Span::styled(line_text, hover_style));
                                 frame.render_widget(
                                     paragraph,
                                     ratatui::layout::Rect::new(*x, *y, *length, 1),
@@ -9213,8 +9390,8 @@ impl Editor {
                             Style::default().fg(self.theme.scrollbar_track_hover_fg);
                         let thumb_style = Style::default().fg(self.theme.scrollbar_thumb_fg);
                         for row_offset in 0..scrollbar_rect.height {
-                            let is_thumb =
-                                (row_offset as usize) >= *thumb_start && (row_offset as usize) < *thumb_end;
+                            let is_thumb = (row_offset as usize) >= *thumb_start
+                                && (row_offset as usize) < *thumb_end;
                             let (char, style) = if is_thumb {
                                 ("█", thumb_style)
                             } else {
@@ -9450,18 +9627,13 @@ impl Editor {
 
                     // Request pull diagnostics after the change
                     // TODO: Consider debouncing this to avoid excessive requests during rapid typing
-                    let previous_result_id = self
-                        .diagnostic_result_ids
-                        .get(uri.as_str())
-                        .cloned();
+                    let previous_result_id = self.diagnostic_result_ids.get(uri.as_str()).cloned();
                     let request_id = self.next_lsp_request_id;
                     self.next_lsp_request_id += 1;
 
-                    if let Err(e) = client.document_diagnostic(
-                        request_id,
-                        uri.clone(),
-                        previous_result_id,
-                    ) {
+                    if let Err(e) =
+                        client.document_diagnostic(request_id, uri.clone(), previous_result_id)
+                    {
                         tracing::debug!(
                             "Failed to request pull diagnostics after change (server may not support): {}",
                             e
@@ -9735,13 +9907,13 @@ impl Editor {
 
             // Add overlay for this match
             let overlay_id = format!("search_highlight_{}", match_count);
-            let search_style = ratatui::style::Style::default()
-                .fg(search_fg)
-                .bg(search_bg);
+            let search_style = ratatui::style::Style::default().fg(search_fg).bg(search_bg);
             let overlay = crate::overlay::Overlay::with_id(
                 &mut state.marker_list,
                 absolute_pos..(absolute_pos + query.len()),
-                crate::overlay::OverlayFace::Style { style: search_style },
+                crate::overlay::OverlayFace::Style {
+                    style: search_style,
+                },
                 overlay_id,
             )
             .with_priority_value(10); // Priority - above syntax highlighting
@@ -9805,9 +9977,19 @@ impl Editor {
                 return true;
             }
             if at_start {
-                pos == 0 || !buffer_content.chars().nth(pos.saturating_sub(1)).map(|c| c.is_alphanumeric() || c == '_').unwrap_or(false)
+                pos == 0
+                    || !buffer_content
+                        .chars()
+                        .nth(pos.saturating_sub(1))
+                        .map(|c| c.is_alphanumeric() || c == '_')
+                        .unwrap_or(false)
             } else {
-                pos >= buffer_content.len() || !buffer_content.chars().nth(pos).map(|c| c.is_alphanumeric() || c == '_').unwrap_or(false)
+                pos >= buffer_content.len()
+                    || !buffer_content
+                        .chars()
+                        .nth(pos)
+                        .map(|c| c.is_alphanumeric() || c == '_')
+                        .unwrap_or(false)
             }
         };
 
@@ -10504,9 +10686,7 @@ impl Editor {
         // Find all line starts in the range
         let buffer_len = state.buffer.len();
         let mut line_starts = Vec::new();
-        let mut iter = state
-            .buffer
-            .line_iterator(start_pos, estimated_line_length);
+        let mut iter = state.buffer.line_iterator(start_pos, estimated_line_length);
         let mut current_pos = iter.current_position();
         line_starts.push(current_pos);
 
@@ -10517,12 +10697,16 @@ impl Editor {
                 if current_pos > end_pos || current_pos > buffer_len {
                     break;
                 }
-                let next_iter = state.buffer.line_iterator(current_pos, estimated_line_length);
+                let next_iter = state
+                    .buffer
+                    .line_iterator(current_pos, estimated_line_length);
                 let next_start = next_iter.current_position();
                 if next_start != *line_starts.last().unwrap() {
                     line_starts.push(next_start);
                 }
-                iter = state.buffer.line_iterator(current_pos, estimated_line_length);
+                iter = state
+                    .buffer
+                    .line_iterator(current_pos, estimated_line_length);
             } else {
                 break;
             }
@@ -10576,9 +10760,7 @@ impl Editor {
         // Find all line starts in the range (same logic as indent)
         let buffer_len = state.buffer.len();
         let mut line_starts = Vec::new();
-        let mut iter = state
-            .buffer
-            .line_iterator(start_pos, estimated_line_length);
+        let mut iter = state.buffer.line_iterator(start_pos, estimated_line_length);
         let mut current_pos = iter.current_position();
         line_starts.push(current_pos);
 
@@ -10588,12 +10770,16 @@ impl Editor {
                 if current_pos > end_pos || current_pos > buffer_len {
                     break;
                 }
-                let next_iter = state.buffer.line_iterator(current_pos, estimated_line_length);
+                let next_iter = state
+                    .buffer
+                    .line_iterator(current_pos, estimated_line_length);
                 let next_start = next_iter.current_position();
                 if next_start != *line_starts.last().unwrap() {
                     line_starts.push(next_start);
                 }
-                iter = state.buffer.line_iterator(current_pos, estimated_line_length);
+                iter = state
+                    .buffer
+                    .line_iterator(current_pos, estimated_line_length);
             } else {
                 break;
             }
@@ -10609,7 +10795,9 @@ impl Editor {
 
         for &line_start in line_starts.iter().rev() {
             // Check how many leading spaces the line has
-            let line_bytes = state.buffer.slice_bytes(line_start..buffer_len.min(line_start + tab_size + 1));
+            let line_bytes = state
+                .buffer
+                .slice_bytes(line_start..buffer_len.min(line_start + tab_size + 1));
             let spaces_to_remove = line_bytes
                 .iter()
                 .take(tab_size)
@@ -10648,17 +10836,17 @@ impl Editor {
         let comment_prefix = if let Some(metadata) = self.buffer_metadata.get(&self.active_buffer) {
             if let Some(path) = metadata.file_path() {
                 match path.extension().and_then(|e| e.to_str()) {
-                    Some("rs") | Some("c") | Some("cpp") | Some("h") | Some("hpp") |
-                    Some("js") | Some("ts") | Some("jsx") | Some("tsx") | Some("java") |
-                    Some("go") | Some("swift") | Some("kt") | Some("scala") => "// ",
-                    Some("py") | Some("rb") | Some("sh") | Some("bash") | Some("zsh") |
-                    Some("pl") | Some("r") | Some("yml") | Some("yaml") | Some("toml") => "# ",
+                    Some("rs") | Some("c") | Some("cpp") | Some("h") | Some("hpp") | Some("js")
+                    | Some("ts") | Some("jsx") | Some("tsx") | Some("java") | Some("go")
+                    | Some("swift") | Some("kt") | Some("scala") => "// ",
+                    Some("py") | Some("rb") | Some("sh") | Some("bash") | Some("zsh")
+                    | Some("pl") | Some("r") | Some("yml") | Some("yaml") | Some("toml") => "# ",
                     Some("lua") | Some("sql") => "-- ",
                     Some("html") | Some("xml") => "<!-- ",
                     Some("css") | Some("scss") | Some("sass") => "/* ",
                     Some("vim") => "\" ",
                     Some("lisp") | Some("el") | Some("clj") => ";; ",
-                    _ => "// "
+                    _ => "// ",
                 }
             } else {
                 "// "
@@ -10686,9 +10874,7 @@ impl Editor {
         // Find all line starts in the range
         let buffer_len = state.buffer.len();
         let mut line_starts = Vec::new();
-        let mut iter = state
-            .buffer
-            .line_iterator(start_pos, estimated_line_length);
+        let mut iter = state.buffer.line_iterator(start_pos, estimated_line_length);
         let mut current_pos = iter.current_position();
         line_starts.push(current_pos);
 
@@ -10698,12 +10884,16 @@ impl Editor {
                 if current_pos > end_pos || current_pos > buffer_len {
                     break;
                 }
-                let next_iter = state.buffer.line_iterator(current_pos, estimated_line_length);
+                let next_iter = state
+                    .buffer
+                    .line_iterator(current_pos, estimated_line_length);
                 let next_start = next_iter.current_position();
                 if next_start != *line_starts.last().unwrap() {
                     line_starts.push(next_start);
                 }
-                iter = state.buffer.line_iterator(current_pos, estimated_line_length);
+                iter = state
+                    .buffer
+                    .line_iterator(current_pos, estimated_line_length);
             } else {
                 break;
             }
@@ -10712,7 +10902,9 @@ impl Editor {
         // Determine if we should comment or uncomment
         // If all lines are commented, uncomment; otherwise comment
         let all_commented = line_starts.iter().all(|&line_start| {
-            let line_bytes = state.buffer.slice_bytes(line_start..buffer_len.min(line_start + comment_prefix.len() + 10));
+            let line_bytes = state
+                .buffer
+                .slice_bytes(line_start..buffer_len.min(line_start + comment_prefix.len() + 10));
             let line_str = String::from_utf8_lossy(&line_bytes);
             let trimmed = line_str.trim_start();
             trimmed.starts_with(comment_prefix.trim())
@@ -10723,11 +10915,17 @@ impl Editor {
         if all_commented {
             // Uncomment: remove comment prefix from each line
             for &line_start in line_starts.iter().rev() {
-                let line_bytes = state.buffer.slice_bytes(line_start..buffer_len.min(line_start + 100));
+                let line_bytes = state
+                    .buffer
+                    .slice_bytes(line_start..buffer_len.min(line_start + 100));
                 let line_str = String::from_utf8_lossy(&line_bytes);
 
                 // Find where the comment prefix starts (after leading whitespace)
-                let leading_ws: usize = line_str.chars().take_while(|c| c.is_whitespace() && *c != '\n').map(|c| c.len_utf8()).sum();
+                let leading_ws: usize = line_str
+                    .chars()
+                    .take_while(|c| c.is_whitespace() && *c != '\n')
+                    .map(|c| c.len_utf8())
+                    .sum();
                 let rest = &line_str[leading_ws..];
 
                 if rest.starts_with(comment_prefix.trim()) {
@@ -10736,7 +10934,10 @@ impl Editor {
                     } else {
                         comment_prefix.trim().len()
                     };
-                    let deleted_text = String::from_utf8_lossy(&state.buffer.slice_bytes(line_start + leading_ws..line_start + leading_ws + remove_len)).to_string();
+                    let deleted_text = String::from_utf8_lossy(&state.buffer.slice_bytes(
+                        line_start + leading_ws..line_start + leading_ws + remove_len,
+                    ))
+                    .to_string();
                     events.push(Event::Delete {
                         range: (line_start + leading_ws)..(line_start + leading_ws + remove_len),
                         deleted_text,
@@ -10759,7 +10960,11 @@ impl Editor {
             return;
         }
 
-        let action_desc = if all_commented { "Uncomment" } else { "Comment" };
+        let action_desc = if all_commented {
+            "Uncomment"
+        } else {
+            "Comment"
+        };
         let batch = Event::Batch {
             events,
             description: format!("{} lines", action_desc),
@@ -11046,7 +11251,10 @@ impl Editor {
             key,
             actions: Vec::new(),
         });
-        self.set_status_message(format!("Recording macro '{}' (press Ctrl+Shift+R {} to stop)", key, key));
+        self.set_status_message(format!(
+            "Recording macro '{}' (press Ctrl+Shift+R {} to stop)",
+            key, key
+        ));
     }
 
     /// Stop recording and save the macro
@@ -11056,10 +11264,7 @@ impl Editor {
             let key = state.key;
             self.macros.insert(key, state.actions);
             self.last_macro_register = Some(key);
-            self.set_status_message(format!(
-                "Macro '{}' saved ({} actions)",
-                key, action_count
-            ));
+            self.set_status_message(format!("Macro '{}' saved ({} actions)", key, action_count));
         } else {
             self.set_status_message("Not recording a macro".to_string());
         }
@@ -11184,7 +11389,8 @@ impl Editor {
         }
 
         // Build a summary of all macros
-        let mut content = String::from("// Recorded Macros\n// Use ShowMacro(key) to see details\n\n");
+        let mut content =
+            String::from("// Recorded Macros\n// Use ShowMacro(key) to see details\n\n");
 
         let mut keys: Vec<char> = self.macros.keys().copied().collect();
         keys.sort();
@@ -11239,17 +11445,20 @@ impl Editor {
 
         // Switch to the new buffer
         self.active_buffer = buffer_id;
-        self.set_status_message(format!(
-            "Showing {} recorded macro(s)",
-            self.macros.len()
-        ));
+        self.set_status_message(format!("Showing {} recorded macro(s)", self.macros.len()));
     }
 
     /// Set a bookmark at the current position
     fn set_bookmark(&mut self, key: char) {
         let buffer_id = self.active_buffer;
         let position = self.active_state().cursors.primary().position;
-        self.bookmarks.insert(key, Bookmark { buffer_id, position });
+        self.bookmarks.insert(
+            key,
+            Bookmark {
+                buffer_id,
+                position,
+            },
+        );
         self.set_status_message(format!("Bookmark '{}' set", key));
     }
 
@@ -11357,7 +11566,12 @@ impl Editor {
     /// Ensure the active tab in a split is visible by adjusting its scroll offset.
     /// This function recalculates the required scroll_offset based on the active tab's position
     /// and the available width, and updates the SplitViewState.
-    fn ensure_active_tab_visible(&mut self, split_id: SplitId, active_buffer: BufferId, available_width: u16) {
+    fn ensure_active_tab_visible(
+        &mut self,
+        split_id: SplitId,
+        active_buffer: BufferId,
+        available_width: u16,
+    ) {
         let Some(view_state) = self.split_view_states.get_mut(&split_id) else {
             return;
         };
@@ -11400,9 +11614,7 @@ impl Editor {
         let max_visible_width = available_width as usize;
 
         let tab_widths: Vec<usize> = tab_layout_info.iter().map(|(w, _)| *w).collect();
-        let active_tab_index = tab_layout_info
-            .iter()
-            .position(|(_, is_active)| *is_active);
+        let active_tab_index = tab_layout_info.iter().position(|(_, is_active)| *is_active);
 
         let new_scroll_offset = if let Some(idx) = active_tab_index {
             crate::ui::tabs::compute_tab_scroll_offset(
@@ -11413,14 +11625,14 @@ impl Editor {
                 1, // separator width
             )
         } else {
-            view_state.tab_scroll_offset.min(total_tabs_width.saturating_sub(max_visible_width))
+            view_state
+                .tab_scroll_offset
+                .min(total_tabs_width.saturating_sub(max_visible_width))
         };
 
         view_state.tab_scroll_offset = new_scroll_offset;
     }
 }
-
-
 
 /// Parse a key string like "RET", "C-n", "M-x", "q" into KeyCode and KeyModifiers
 ///
@@ -12217,15 +12429,26 @@ mod tests {
         editor.perform_search("hello");
 
         let search_state = editor.search_state.as_ref().unwrap();
-        assert_eq!(search_state.matches.len(), 3, "Should find all 3 matches case-insensitively");
+        assert_eq!(
+            search_state.matches.len(),
+            3,
+            "Should find all 3 matches case-insensitively"
+        );
 
         // Test case-sensitive search
         editor.search_case_sensitive = true;
         editor.perform_search("hello");
 
         let search_state = editor.search_state.as_ref().unwrap();
-        assert_eq!(search_state.matches.len(), 1, "Should find only 1 exact match");
-        assert_eq!(search_state.matches[0], 6, "Should find 'hello' at position 6");
+        assert_eq!(
+            search_state.matches.len(),
+            1,
+            "Should find only 1 exact match"
+        );
+        assert_eq!(
+            search_state.matches[0], 6,
+            "Should find 'hello' at position 6"
+        );
     }
 
     #[test]
@@ -12247,14 +12470,22 @@ mod tests {
         editor.perform_search("test");
 
         let search_state = editor.search_state.as_ref().unwrap();
-        assert_eq!(search_state.matches.len(), 5, "Should find 'test' in all occurrences");
+        assert_eq!(
+            search_state.matches.len(),
+            5,
+            "Should find 'test' in all occurrences"
+        );
 
         // Test whole word match
         editor.search_whole_word = true;
         editor.perform_search("test");
 
         let search_state = editor.search_state.as_ref().unwrap();
-        assert_eq!(search_state.matches.len(), 2, "Should find only whole word 'test'");
+        assert_eq!(
+            search_state.matches.len(),
+            2,
+            "Should find only whole word 'test'"
+        );
         assert_eq!(search_state.matches[0], 0, "First match at position 0");
         assert_eq!(search_state.matches[1], 27, "Second match at position 27");
     }
@@ -12315,21 +12546,54 @@ mod tests {
         use serde_json::json;
 
         let args = HashMap::new();
-        assert_eq!(Action::from_str("smart_home", &args), Some(Action::SmartHome));
-        assert_eq!(Action::from_str("indent_selection", &args), Some(Action::IndentSelection));
-        assert_eq!(Action::from_str("dedent_selection", &args), Some(Action::DedentSelection));
-        assert_eq!(Action::from_str("toggle_comment", &args), Some(Action::ToggleComment));
-        assert_eq!(Action::from_str("goto_matching_bracket", &args), Some(Action::GoToMatchingBracket));
-        assert_eq!(Action::from_str("list_bookmarks", &args), Some(Action::ListBookmarks));
-        assert_eq!(Action::from_str("toggle_search_case_sensitive", &args), Some(Action::ToggleSearchCaseSensitive));
-        assert_eq!(Action::from_str("toggle_search_whole_word", &args), Some(Action::ToggleSearchWholeWord));
+        assert_eq!(
+            Action::from_str("smart_home", &args),
+            Some(Action::SmartHome)
+        );
+        assert_eq!(
+            Action::from_str("indent_selection", &args),
+            Some(Action::IndentSelection)
+        );
+        assert_eq!(
+            Action::from_str("dedent_selection", &args),
+            Some(Action::DedentSelection)
+        );
+        assert_eq!(
+            Action::from_str("toggle_comment", &args),
+            Some(Action::ToggleComment)
+        );
+        assert_eq!(
+            Action::from_str("goto_matching_bracket", &args),
+            Some(Action::GoToMatchingBracket)
+        );
+        assert_eq!(
+            Action::from_str("list_bookmarks", &args),
+            Some(Action::ListBookmarks)
+        );
+        assert_eq!(
+            Action::from_str("toggle_search_case_sensitive", &args),
+            Some(Action::ToggleSearchCaseSensitive)
+        );
+        assert_eq!(
+            Action::from_str("toggle_search_whole_word", &args),
+            Some(Action::ToggleSearchWholeWord)
+        );
 
         // Test bookmark actions with arguments
         let mut args_with_char = HashMap::new();
         args_with_char.insert("char".to_string(), json!("5"));
-        assert_eq!(Action::from_str("set_bookmark", &args_with_char), Some(Action::SetBookmark('5')));
-        assert_eq!(Action::from_str("jump_to_bookmark", &args_with_char), Some(Action::JumpToBookmark('5')));
-        assert_eq!(Action::from_str("clear_bookmark", &args_with_char), Some(Action::ClearBookmark('5')));
+        assert_eq!(
+            Action::from_str("set_bookmark", &args_with_char),
+            Some(Action::SetBookmark('5'))
+        );
+        assert_eq!(
+            Action::from_str("jump_to_bookmark", &args_with_char),
+            Some(Action::JumpToBookmark('5'))
+        );
+        assert_eq!(
+            Action::from_str("clear_bookmark", &args_with_char),
+            Some(Action::ClearBookmark('5'))
+        );
     }
 
     #[test]
@@ -12607,7 +12871,9 @@ mod tests {
         };
 
         // Apply the rename batch (this should preserve cursor position)
-        editor.apply_rename_batch_to_buffer(buffer_id, batch).unwrap();
+        editor
+            .apply_rename_batch_to_buffer(buffer_id, batch)
+            .unwrap();
 
         // Verify buffer was correctly modified
         let final_content = editor.active_state().buffer.to_string();
@@ -12691,17 +12957,26 @@ mod tests {
         let lsp_changes1 = editor.collect_lsp_changes(&batch1);
 
         // Verify first rename LSP positions are correct
-        assert_eq!(lsp_changes1.len(), 4, "First rename should have 4 LSP changes");
+        assert_eq!(
+            lsp_changes1.len(),
+            4,
+            "First rename should have 4 LSP changes"
+        );
 
         // First delete should be at line 1, char 4-7 (second "val")
         let first_del = &lsp_changes1[0];
         let first_del_range = first_del.range.unwrap();
         assert_eq!(first_del_range.start.line, 1, "First delete line");
-        assert_eq!(first_del_range.start.character, 4, "First delete start char");
+        assert_eq!(
+            first_del_range.start.character, 4,
+            "First delete start char"
+        );
         assert_eq!(first_del_range.end.character, 7, "First delete end char");
 
         // Apply first rename
-        editor.apply_rename_batch_to_buffer(buffer_id, batch1).unwrap();
+        editor
+            .apply_rename_batch_to_buffer(buffer_id, batch1)
+            .unwrap();
 
         // Verify buffer after first rename
         let after_first = editor.active_state().buffer.to_string();
@@ -12753,7 +13028,11 @@ mod tests {
         // Verify second rename LSP positions are correct
         // THIS IS WHERE THE BUG WOULD MANIFEST - if positions are wrong,
         // the LSP server would report "No references found at position"
-        assert_eq!(lsp_changes2.len(), 4, "Second rename should have 4 LSP changes");
+        assert_eq!(
+            lsp_changes2.len(),
+            4,
+            "Second rename should have 4 LSP changes"
+        );
 
         // First delete should be at line 1, char 4-9 (second "value")
         let second_first_del = &lsp_changes2[0];
@@ -12788,7 +13067,9 @@ mod tests {
         );
 
         // Apply second rename
-        editor.apply_rename_batch_to_buffer(buffer_id, batch2).unwrap();
+        editor
+            .apply_rename_batch_to_buffer(buffer_id, batch2)
+            .unwrap();
 
         // Verify buffer after second rename
         let after_second = editor.active_state().buffer.to_string();
@@ -12806,11 +13087,26 @@ mod tests {
 
         // Create three buffers with long names to force scrolling.
         let buf1 = editor.new_buffer();
-        editor.buffers.get_mut(&buf1).unwrap().buffer.set_file_path(std::path::PathBuf::from("aaa_long_name_01.txt"));
+        editor
+            .buffers
+            .get_mut(&buf1)
+            .unwrap()
+            .buffer
+            .set_file_path(std::path::PathBuf::from("aaa_long_name_01.txt"));
         let buf2 = editor.new_buffer();
-        editor.buffers.get_mut(&buf2).unwrap().buffer.set_file_path(std::path::PathBuf::from("bbb_long_name_02.txt"));
+        editor
+            .buffers
+            .get_mut(&buf2)
+            .unwrap()
+            .buffer
+            .set_file_path(std::path::PathBuf::from("bbb_long_name_02.txt"));
         let buf3 = editor.new_buffer();
-        editor.buffers.get_mut(&buf3).unwrap().buffer.set_file_path(std::path::PathBuf::from("ccc_long_name_03.txt"));
+        editor
+            .buffers
+            .get_mut(&buf3)
+            .unwrap()
+            .buffer
+            .set_file_path(std::path::PathBuf::from("ccc_long_name_03.txt"));
 
         {
             let view_state = editor.split_view_states.get_mut(&split_id).unwrap();

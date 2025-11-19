@@ -71,12 +71,7 @@ impl SplitRenderer {
             let scrollbar_width = 1u16;
 
             // Tabs area at top of split
-            let tabs_rect = Rect::new(
-                split_area.x,
-                split_area.y,
-                split_area.width,
-                tabs_height,
-            );
+            let tabs_rect = Rect::new(split_area.x, split_area.y, split_area.width, tabs_height);
 
             // Content area below tabs
             let content_rect = Rect::new(
@@ -98,7 +93,10 @@ impl SplitRenderer {
             let (split_buffers, tab_scroll_offset) = if let Some(view_states) = split_view_states {
                 if let Some(view_state) = view_states.get(&split_id) {
                     // Use the split's open_buffers list and tab_scroll_offset
-                    (view_state.open_buffers.clone(), view_state.tab_scroll_offset)
+                    (
+                        view_state.open_buffers.clone(),
+                        view_state.tab_scroll_offset,
+                    )
                 } else {
                     // No view state for this split - just show the current buffer
                     (vec![buffer_id], 0)
@@ -133,8 +131,14 @@ impl SplitRenderer {
                 if !is_active {
                     if let Some(view_states) = split_view_states {
                         if let Some(view_state) = view_states.get(&split_id) {
-                            saved_cursors = Some(std::mem::replace(&mut state.cursors, view_state.cursors.clone()));
-                            saved_viewport = Some(std::mem::replace(&mut state.viewport, view_state.viewport.clone()));
+                            saved_cursors = Some(std::mem::replace(
+                                &mut state.cursors,
+                                view_state.cursors.clone(),
+                            ));
+                            saved_viewport = Some(std::mem::replace(
+                                &mut state.viewport,
+                                view_state.viewport.clone(),
+                            ));
                         } else {
                             saved_cursors = None;
                             saved_viewport = None;
@@ -433,8 +437,7 @@ impl SplitRenderer {
                     if let Some(anchor) = cursor.block_anchor {
                         // Convert cursor position to 2D coords
                         let cur_line = state.buffer.get_line_number(cursor.position);
-                        let cur_line_start =
-                            state.buffer.line_start_offset(cur_line).unwrap_or(0);
+                        let cur_line_start = state.buffer.line_start_offset(cur_line).unwrap_or(0);
                         let cur_col = cursor.position.saturating_sub(cur_line_start);
 
                         // Return normalized rectangle (min values first)
@@ -547,9 +550,10 @@ impl SplitRenderer {
             .collect();
 
         // Query virtual texts for the viewport and build a lookup by position
-        let virtual_text_lookup = state
-            .virtual_texts
-            .build_lookup(&state.marker_list, viewport_start, viewport_end);
+        let virtual_text_lookup =
+            state
+                .virtual_texts
+                .build_lookup(&state.marker_list, viewport_start, viewport_end);
 
         // Check if buffer is empty before creating iterator (to avoid borrow conflict)
         let is_empty_buffer = state.buffer.is_empty();
@@ -880,7 +884,10 @@ impl SplitRenderer {
 
                     // Check for BeforeChar virtual texts at this position
                     if let Some(vtexts) = virtual_text_lookup.get(&byte_pos) {
-                        for vtext in vtexts.iter().filter(|v| v.position == VirtualTextPosition::BeforeChar) {
+                        for vtext in vtexts
+                            .iter()
+                            .filter(|v| v.position == VirtualTextPosition::BeforeChar)
+                        {
                             // Add spacing: "hint_text " before the character
                             let text_with_space = format!("{} ", vtext.text);
                             line_spans.push(Span::styled(text_with_space, vtext.style));
@@ -901,7 +908,10 @@ impl SplitRenderer {
 
                     // Check for AfterChar virtual texts at this position
                     if let Some(vtexts) = virtual_text_lookup.get(&byte_pos) {
-                        for vtext in vtexts.iter().filter(|v| v.position == VirtualTextPosition::AfterChar) {
+                        for vtext in vtexts
+                            .iter()
+                            .filter(|v| v.position == VirtualTextPosition::AfterChar)
+                        {
                             // Add spacing: " hint_text" after the character
                             let text_with_space = format!(" {}", vtext.text);
                             line_spans.push(Span::styled(text_with_space, vtext.style));

@@ -559,12 +559,16 @@ fn test_wrapped_line_scrolling_down_past_viewport() {
             i, i
         )).unwrap();
         if i < 19 {
-            harness.send_key(KeyCode::Enter, KeyModifiers::NONE).unwrap();
+            harness
+                .send_key(KeyCode::Enter, KeyModifiers::NONE)
+                .unwrap();
         }
     }
 
     // Move cursor to the beginning
-    harness.send_key(KeyCode::Home, KeyModifiers::CONTROL).unwrap();
+    harness
+        .send_key(KeyCode::Home, KeyModifiers::CONTROL)
+        .unwrap();
     harness.render().unwrap();
 
     let buffer_content = harness.get_buffer_content();

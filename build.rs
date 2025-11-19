@@ -119,7 +119,9 @@ fn rust_type_to_ts(rust_type: &str) -> String {
         "TsSuggestion" => "PromptSuggestion".to_string(),
         "DirEntry" => "DirEntry".to_string(),
         "CreateVirtualBufferOptions" => "CreateVirtualBufferOptions".to_string(),
-        "CreateVirtualBufferInExistingSplitOptions" => "CreateVirtualBufferInExistingSplitOptions".to_string(),
+        "CreateVirtualBufferInExistingSplitOptions" => {
+            "CreateVirtualBufferInExistingSplitOptions".to_string()
+        }
         "TsTextPropertyEntry" => "TextPropertyEntry".to_string(),
 
         // Serde JSON value
@@ -229,7 +231,13 @@ fn extract_ops(rust_source: &str) -> Vec<OpInfo> {
                     // Extract doc comments
                     let doc_comment = extract_doc_comments(&lines, i);
 
-                    if let Some(mut op_info) = parse_fn_signature(fn_line, has_string_return, has_serde_return, is_async, &lines[fn_line_idx..]) {
+                    if let Some(mut op_info) = parse_fn_signature(
+                        fn_line,
+                        has_string_return,
+                        has_serde_return,
+                        is_async,
+                        &lines[fn_line_idx..],
+                    ) {
                         op_info.doc_comment = doc_comment;
                         ops.push(op_info);
                     }
@@ -243,9 +251,19 @@ fn extract_ops(rust_source: &str) -> Vec<OpInfo> {
 }
 
 /// Parse a function signature to extract op info
-fn parse_fn_signature(line: &str, has_string_return: bool, has_serde_return: bool, is_async: bool, remaining_lines: &[&str]) -> Option<OpInfo> {
+fn parse_fn_signature(
+    line: &str,
+    has_string_return: bool,
+    has_serde_return: bool,
+    is_async: bool,
+    remaining_lines: &[&str],
+) -> Option<OpInfo> {
     // Extract function name
-    let fn_keyword = if line.contains("async fn ") { "async fn " } else { "fn " };
+    let fn_keyword = if line.contains("async fn ") {
+        "async fn "
+    } else {
+        "fn "
+    };
     let fn_start = line.find(fn_keyword)? + fn_keyword.len();
     let paren_start = line.find('(')?;
     let fn_name = &line[fn_start..paren_start];
@@ -308,11 +326,18 @@ fn parse_fn_signature(line: &str, has_string_return: bool, has_serde_return: boo
         "string".to_string()
     } else if let Some(arrow_pos) = full_sig.find("->") {
         let ret_start = arrow_pos + 2;
-        let ret_end = full_sig[ret_start..].find('{').map(|p| ret_start + p).unwrap_or(full_sig.len());
+        let ret_end = full_sig[ret_start..]
+            .find('{')
+            .map(|p| ret_start + p)
+            .unwrap_or(full_sig.len());
         let rust_ret = full_sig[ret_start..ret_end].trim();
 
         // For serde return, the type is already the Rust type
-        if has_serde_return || rust_ret.starts_with("Result<") || rust_ret.starts_with("Option<") || rust_ret.starts_with("Vec<") {
+        if has_serde_return
+            || rust_ret.starts_with("Result<")
+            || rust_ret.starts_with("Option<")
+            || rust_ret.starts_with("Vec<")
+        {
             rust_type_to_ts(rust_ret)
         } else {
             rust_type_to_ts(rust_ret)
@@ -335,7 +360,10 @@ fn parse_param(param_str: &str) -> Option<ParamInfo> {
     let param_str = param_str.trim();
 
     // Skip state parameter
-    if param_str.contains("OpState") || param_str.starts_with("state:") || param_str.starts_with("state ") {
+    if param_str.contains("OpState")
+        || param_str.starts_with("state:")
+        || param_str.starts_with("state ")
+    {
         return None;
     }
 
@@ -395,7 +423,9 @@ fn extract_structs(rust_source: &str) -> Vec<StructInfo> {
         let line = lines[i].trim();
 
         // Look for #[derive(...Serialize...)] or #[derive(...Deserialize...)]
-        if line.starts_with("#[derive(") && (line.contains("Serialize") || line.contains("Deserialize")) {
+        if line.starts_with("#[derive(")
+            && (line.contains("Serialize") || line.contains("Deserialize"))
+        {
             // Find the struct definition
             let mut struct_line_idx = i + 1;
             while struct_line_idx < lines.len() {
@@ -409,7 +439,8 @@ fn extract_structs(rust_source: &str) -> Vec<StructInfo> {
                 }
             }
 
-            if struct_line_idx < lines.len() && lines[struct_line_idx].trim().starts_with("struct ") {
+            if struct_line_idx < lines.len() && lines[struct_line_idx].trim().starts_with("struct ")
+            {
                 let doc_comment = extract_doc_comments(&lines, i);
 
                 if let Some(mut struct_info) = parse_struct(&lines, struct_line_idx) {
@@ -430,7 +461,8 @@ fn parse_struct(lines: &[&str], struct_line_idx: usize) -> Option<StructInfo> {
 
     // Extract struct name
     let name_start = struct_line.find("struct ")? + 7;
-    let name_end = struct_line[name_start..].find(|c: char| c == ' ' || c == '{')
+    let name_end = struct_line[name_start..]
+        .find(|c: char| c == ' ' || c == '{')
         .map(|p| name_start + p)
         .unwrap_or(struct_line.len());
     let name = struct_line[name_start..name_end].trim().to_string();
@@ -590,7 +622,10 @@ fn generate_typescript_types() -> Result<(), Box<dyn std::error::Error>> {
             }
 
             let optional_marker = if field.is_optional { "?" } else { "" };
-            output.push_str(&format!("  {}{}: {};\n", field.name, optional_marker, field.ts_type));
+            output.push_str(&format!(
+                "  {}{}: {};\n",
+                field.name, optional_marker, field.ts_type
+            ));
         }
 
         output.push_str("}\n\n");
@@ -608,16 +643,32 @@ interface EditorAPI {
     // Add ops by category
     add_category_ops(&mut output, "Status and Logging", &categories["status"]);
     add_category_ops(&mut output, "Buffer Queries", &categories["query"]);
-    add_category_ops(&mut output, "Buffer Info Queries", &categories["buffer_info"]);
+    add_category_ops(
+        &mut output,
+        "Buffer Info Queries",
+        &categories["buffer_info"],
+    );
     add_category_ops(&mut output, "Prompt Operations", &categories["prompt"]);
     add_category_ops(&mut output, "Buffer Mutations", &categories["mutation"]);
     add_category_ops(&mut output, "Async Operations", &categories["async"]);
     add_category_ops(&mut output, "Overlay Operations", &categories["overlay"]);
-    add_category_ops(&mut output, "File System Operations", &categories["filesystem"]);
-    add_category_ops(&mut output, "Environment Operations", &categories["environment"]);
+    add_category_ops(
+        &mut output,
+        "File System Operations",
+        &categories["filesystem"],
+    );
+    add_category_ops(
+        &mut output,
+        "Environment Operations",
+        &categories["environment"],
+    );
     add_category_ops(&mut output, "Path Operations", &categories["path"]);
     add_category_ops(&mut output, "Event/Hook Operations", &categories["event"]);
-    add_category_ops(&mut output, "Virtual Buffer Operations", &categories["virtual_buffer"]);
+    add_category_ops(
+        &mut output,
+        "Virtual Buffer Operations",
+        &categories["virtual_buffer"],
+    );
 
     output.push_str(
         r#"}
@@ -640,7 +691,11 @@ export {};
     let markdown = generate_markdown_docs(&ops, &structs, &categories);
     fs::write("docs/plugin-api.md", markdown)?;
 
-    println!("cargo::warning=Generated types/fresh.d.ts with {} ops and {} interfaces", ops.len(), structs.len());
+    println!(
+        "cargo::warning=Generated types/fresh.d.ts with {} ops and {} interfaces",
+        ops.len(),
+        structs.len()
+    );
 
     Ok(())
 }
@@ -655,7 +710,9 @@ fn generate_markdown_docs(
 
     // Header from template concept docs
     md.push_str("# Fresh Editor Plugin API\n\n");
-    md.push_str("This document describes the TypeScript API available to Fresh editor plugins.\n\n");
+    md.push_str(
+        "This document describes the TypeScript API available to Fresh editor plugins.\n\n",
+    );
 
     // Core concepts
     md.push_str("## Core Concepts\n\n");
@@ -664,7 +721,9 @@ fn generate_markdown_docs(
     md.push_str("A buffer holds text content and may or may not be associated with a file. ");
     md.push_str("Each buffer has a unique numeric ID that persists for the editor session. ");
     md.push_str("Buffers track their content, modification state, cursor positions, and path. ");
-    md.push_str("All text operations (insert, delete, read) use byte offsets, not character indices.\n\n");
+    md.push_str(
+        "All text operations (insert, delete, read) use byte offsets, not character indices.\n\n",
+    );
 
     md.push_str("### Splits\n\n");
     md.push_str("A split is a viewport pane that displays a buffer. The editor can have multiple ");
@@ -673,25 +732,43 @@ fn generate_markdown_docs(
     md.push_str("pane displays which buffer.\n\n");
 
     md.push_str("### Virtual Buffers\n\n");
-    md.push_str("Special buffers created by plugins to display structured data like search results, ");
-    md.push_str("diagnostics, or git logs. Virtual buffers support text properties (metadata attached ");
-    md.push_str("to text ranges) that plugins can query when the user selects a line. Unlike normal ");
+    md.push_str(
+        "Special buffers created by plugins to display structured data like search results, ",
+    );
+    md.push_str(
+        "diagnostics, or git logs. Virtual buffers support text properties (metadata attached ",
+    );
+    md.push_str(
+        "to text ranges) that plugins can query when the user selects a line. Unlike normal ",
+    );
     md.push_str("buffers, virtual buffers are typically read-only and not backed by files.\n\n");
 
     md.push_str("### Text Properties\n\n");
-    md.push_str("Metadata attached to text ranges in virtual buffers. Each entry has text content ");
-    md.push_str("and a properties object with arbitrary key-value pairs. Use `getTextPropertiesAtCursor` ");
+    md.push_str(
+        "Metadata attached to text ranges in virtual buffers. Each entry has text content ",
+    );
+    md.push_str(
+        "and a properties object with arbitrary key-value pairs. Use `getTextPropertiesAtCursor` ",
+    );
     md.push_str("to retrieve properties at the cursor position (e.g., to get file/line info for \"go to\").\n\n");
 
     md.push_str("### Overlays\n\n");
-    md.push_str("Visual decorations applied to buffer text without modifying content. Overlays can ");
-    md.push_str("change text color and add underlines. Use overlay IDs to manage them; prefix IDs ");
+    md.push_str(
+        "Visual decorations applied to buffer text without modifying content. Overlays can ",
+    );
+    md.push_str(
+        "change text color and add underlines. Use overlay IDs to manage them; prefix IDs ",
+    );
     md.push_str("enable batch removal (e.g., \"lint:\" prefix for all linter highlights).\n\n");
 
     md.push_str("### Modes\n\n");
-    md.push_str("Keybinding contexts that determine how keypresses are interpreted. Each buffer has ");
+    md.push_str(
+        "Keybinding contexts that determine how keypresses are interpreted. Each buffer has ",
+    );
     md.push_str("a mode (e.g., \"normal\", \"insert\", \"special\"). Custom modes can inherit from parents ");
-    md.push_str("and define buffer-local keybindings. Virtual buffers typically use custom modes.\n\n");
+    md.push_str(
+        "and define buffer-local keybindings. Virtual buffers typically use custom modes.\n\n",
+    );
 
     // Types section
     md.push_str("## Types\n\n");
@@ -713,7 +790,10 @@ fn generate_markdown_docs(
         md.push_str(&format!("interface {} {{\n", struct_info.ts_name));
         for field in &struct_info.fields {
             let optional = if field.is_optional { "?" } else { "" };
-            md.push_str(&format!("  {}{}: {};\n", field.name, optional, field.ts_type));
+            md.push_str(&format!(
+                "  {}{}: {};\n",
+                field.name, optional, field.ts_type
+            ));
         }
         md.push_str("}\n");
         md.push_str("```\n\n");
@@ -768,7 +848,10 @@ fn generate_markdown_docs(
                     let lines: Vec<&str> = op.doc_comment.lines().collect();
                     for line in &lines {
                         let trimmed = line.trim();
-                        if trimmed.starts_with("@param") || trimmed.starts_with("@returns") || trimmed.starts_with("@example") {
+                        if trimmed.starts_with("@param")
+                            || trimmed.starts_with("@returns")
+                            || trimmed.starts_with("@example")
+                        {
                             continue;
                         }
                         if !trimmed.is_empty() {
@@ -779,10 +862,14 @@ fn generate_markdown_docs(
                 }
 
                 // Signature
-                let params: Vec<String> = op.params.iter().map(|p| {
-                    let optional = if p.is_optional { "?" } else { "" };
-                    format!("{}{}: {}", p.name, optional, p.ts_type)
-                }).collect();
+                let params: Vec<String> = op
+                    .params
+                    .iter()
+                    .map(|p| {
+                        let optional = if p.is_optional { "?" } else { "" };
+                        format!("{}{}: {}", p.name, optional, p.ts_type)
+                    })
+                    .collect();
 
                 let return_type = if op.is_async {
                     format!("Promise<{}>", op.return_type)
@@ -791,7 +878,12 @@ fn generate_markdown_docs(
                 };
 
                 md.push_str("```typescript\n");
-                md.push_str(&format!("{}({}): {}\n", op.js_name, params.join(", "), return_type));
+                md.push_str(&format!(
+                    "{}({}): {}\n",
+                    op.js_name,
+                    params.join(", "),
+                    return_type
+                ));
                 md.push_str("```\n\n");
 
                 // Parameters table
@@ -804,8 +896,10 @@ fn generate_markdown_docs(
                         // Try to find @param description
                         let desc = extract_param_doc(&op.doc_comment, &param.name);
                         let optional_mark = if param.is_optional { " (optional)" } else { "" };
-                        md.push_str(&format!("| `{}` | `{}`{} | {} |\n",
-                            param.name, param.ts_type, optional_mark, desc));
+                        md.push_str(&format!(
+                            "| `{}` | `{}`{} | {} |\n",
+                            param.name, param.ts_type, optional_mark, desc
+                        ));
                     }
                     md.push_str("\n");
                 }
@@ -869,9 +963,16 @@ fn extract_example(doc: &str) -> Option<String> {
 /// Categorize an op based on its name
 fn categorize_op(js_name: &str, is_async: bool) -> &'static str {
     // Virtual buffer operations
-    if js_name.contains("VirtualBuffer") || js_name == "defineMode" || js_name == "showBuffer"
-        || js_name == "closeBuffer" || js_name == "focusSplit" || js_name == "setSplitBuffer"
-        || js_name == "closeSplit" || js_name == "getTextPropertiesAtCursor" || js_name == "setVirtualBufferContent" {
+    if js_name.contains("VirtualBuffer")
+        || js_name == "defineMode"
+        || js_name == "showBuffer"
+        || js_name == "closeBuffer"
+        || js_name == "focusSplit"
+        || js_name == "setSplitBuffer"
+        || js_name == "closeSplit"
+        || js_name == "getTextPropertiesAtCursor"
+        || js_name == "setVirtualBufferContent"
+    {
         return "virtual_buffer";
     }
 
@@ -891,8 +992,12 @@ fn categorize_op(js_name: &str, is_async: bool) -> &'static str {
     }
 
     // File system operations
-    if js_name == "readFile" || js_name == "writeFile" || js_name == "fileExists"
-        || js_name == "fileStat" || js_name == "readDir" {
+    if js_name == "readFile"
+        || js_name == "writeFile"
+        || js_name == "fileExists"
+        || js_name == "fileStat"
+        || js_name == "readDir"
+    {
         return "filesystem";
     }
 
@@ -907,8 +1012,12 @@ fn categorize_op(js_name: &str, is_async: bool) -> &'static str {
     }
 
     // Buffer info queries
-    if js_name == "getBufferInfo" || js_name == "listBuffers" || js_name == "getPrimaryCursor"
-        || js_name == "getAllCursors" || js_name == "getViewport" {
+    if js_name == "getBufferInfo"
+        || js_name == "listBuffers"
+        || js_name == "getPrimaryCursor"
+        || js_name == "getAllCursors"
+        || js_name == "getViewport"
+    {
         return "buffer_info";
     }
 
@@ -918,8 +1027,11 @@ fn categorize_op(js_name: &str, is_async: bool) -> &'static str {
     }
 
     // Overlay operations
-    if js_name.contains("Overlay") || js_name.contains("overlay")
-        || js_name.contains("VirtualText") || js_name == "refreshLines" {
+    if js_name.contains("Overlay")
+        || js_name.contains("overlay")
+        || js_name.contains("VirtualText")
+        || js_name == "refreshLines"
+    {
         return "overlay";
     }
 
@@ -956,10 +1068,14 @@ fn format_method(op: &OpInfo) -> String {
     }
 
     // Format parameters
-    let params: Vec<String> = op.params.iter().map(|p| {
-        let optional = if p.is_optional { "?" } else { "" };
-        format!("{}{}: {}", p.name, optional, p.ts_type)
-    }).collect();
+    let params: Vec<String> = op
+        .params
+        .iter()
+        .map(|p| {
+            let optional = if p.is_optional { "?" } else { "" };
+            format!("{}{}: {}", p.name, optional, p.ts_type)
+        })
+        .collect();
 
     // Format return type (wrap in Promise if async)
     let return_type = if op.is_async {
@@ -968,6 +1084,11 @@ fn format_method(op: &OpInfo) -> String {
         op.return_type.clone()
     };
 
-    result.push_str(&format!("  {}({}): {};\n", op.js_name, params.join(", "), return_type));
+    result.push_str(&format!(
+        "  {}({}): {};\n",
+        op.js_name,
+        params.join(", "),
+        return_type
+    ));
     result
 }

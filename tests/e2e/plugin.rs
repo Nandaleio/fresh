@@ -1175,8 +1175,16 @@ fn test_todo_highlighter_cursor_perf() {
     let up_elapsed = up_start.elapsed();
 
     println!("\n=== Results ===");
-    println!("Down: {:?} total, {:?} per move", down_elapsed, down_elapsed / num_moves);
-    println!("Up: {:?} total, {:?} per move", up_elapsed, up_elapsed / num_moves);
+    println!(
+        "Down: {:?} total, {:?} per move",
+        down_elapsed,
+        down_elapsed / num_moves
+    );
+    println!(
+        "Up: {:?} total, {:?} per move",
+        up_elapsed,
+        up_elapsed / num_moves
+    );
     println!("Total: {:?}", down_elapsed + up_elapsed);
     println!("================\n");
 

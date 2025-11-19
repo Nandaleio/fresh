@@ -527,7 +527,9 @@ fn test_load_edit_save_flow_small_and_large_files() {
         // Verify we can navigate to the edited sections
         // Move down to line 5 where we made the first edit
         for _ in 0..5 {
-            harness2.send_key(KeyCode::Down, KeyModifiers::NONE).unwrap();
+            harness2
+                .send_key(KeyCode::Down, KeyModifiers::NONE)
+                .unwrap();
         }
         // The content should be visible on screen
         harness2.assert_screen_contains("[LARGE FILE EDIT]");

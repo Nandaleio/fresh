@@ -17,7 +17,9 @@ fn test_split_horizontal() {
         .unwrap();
     harness.render().unwrap();
     harness.type_text("split horiz").unwrap();
-    harness.send_key(KeyCode::Enter, KeyModifiers::NONE).unwrap();
+    harness
+        .send_key(KeyCode::Enter, KeyModifiers::NONE)
+        .unwrap();
 
     // Should see status message
     harness.render().unwrap();
@@ -42,7 +44,9 @@ fn test_split_vertical() {
         .unwrap();
     harness.render().unwrap();
     harness.type_text("split vert").unwrap();
-    harness.send_key(KeyCode::Enter, KeyModifiers::NONE).unwrap();
+    harness
+        .send_key(KeyCode::Enter, KeyModifiers::NONE)
+        .unwrap();
 
     // Should see status message
     harness.render().unwrap();
@@ -64,7 +68,9 @@ fn test_split_navigation() {
         .unwrap();
     harness.render().unwrap();
     harness.type_text("split vert").unwrap();
-    harness.send_key(KeyCode::Enter, KeyModifiers::NONE).unwrap();
+    harness
+        .send_key(KeyCode::Enter, KeyModifiers::NONE)
+        .unwrap();
     harness.render().unwrap();
 
     // Now in second split - it shows the same buffer content (Emacs-style)
@@ -82,7 +88,9 @@ fn test_split_navigation() {
         .unwrap();
     harness.render().unwrap();
     harness.type_text("next split").unwrap();
-    harness.send_key(KeyCode::Enter, KeyModifiers::NONE).unwrap();
+    harness
+        .send_key(KeyCode::Enter, KeyModifiers::NONE)
+        .unwrap();
 
     // Should see status message
     harness.render().unwrap();
@@ -94,7 +102,9 @@ fn test_split_navigation() {
         .unwrap();
     harness.render().unwrap();
     harness.type_text("prev split").unwrap();
-    harness.send_key(KeyCode::Enter, KeyModifiers::NONE).unwrap();
+    harness
+        .send_key(KeyCode::Enter, KeyModifiers::NONE)
+        .unwrap();
 
     // Should see status message
     harness.render().unwrap();
@@ -112,7 +122,9 @@ fn test_close_split() {
         .unwrap();
     harness.render().unwrap();
     harness.type_text("split vert").unwrap();
-    harness.send_key(KeyCode::Enter, KeyModifiers::NONE).unwrap();
+    harness
+        .send_key(KeyCode::Enter, KeyModifiers::NONE)
+        .unwrap();
     harness.render().unwrap();
 
     // Close the split via command palette
@@ -121,7 +133,9 @@ fn test_close_split() {
         .unwrap();
     harness.render().unwrap();
     harness.type_text("close split").unwrap();
-    harness.send_key(KeyCode::Enter, KeyModifiers::NONE).unwrap();
+    harness
+        .send_key(KeyCode::Enter, KeyModifiers::NONE)
+        .unwrap();
 
     // Should see status message
     harness.render().unwrap();

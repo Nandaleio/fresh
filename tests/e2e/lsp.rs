@@ -1059,10 +1059,7 @@ fn test_rust_analyzer_rename_content_modified() -> std::io::Result<()> {
     // Initialize tracing to see LSP debug messages
     let _ = tracing_subscriber::registry()
         .with(fmt::layer().with_writer(std::io::stderr))
-        .with(
-            EnvFilter::try_from_default_env()
-                .unwrap_or_else(|_| EnvFilter::new("fresh=debug")),
-        )
+        .with(EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("fresh=debug")))
         .try_init();
 
     // Check if rust-analyzer is installed
@@ -1197,7 +1194,10 @@ edition = "2021"
 
     // Verify cursor is on 'value'
     assert!(
-        char_at_cursor == 'a' || char_at_cursor == 'l' || char_at_cursor == 'u' || char_at_cursor == 'e',
+        char_at_cursor == 'a'
+            || char_at_cursor == 'l'
+            || char_at_cursor == 'u'
+            || char_at_cursor == 'e',
         "Cursor should be on 'value', but got '{}'",
         char_at_cursor
     );
@@ -1946,15 +1946,27 @@ fn test_lsp_rename_consecutive_same_position() -> std::io::Result<()> {
             edits: vec![
                 OneOf::Left(TextEdit {
                     range: Range {
-                        start: Position { line: 0, character: 13 },
-                        end: Position { line: 0, character: 18 },
+                        start: Position {
+                            line: 0,
+                            character: 13,
+                        },
+                        end: Position {
+                            line: 0,
+                            character: 18,
+                        },
                     },
                     new_text: "amount".to_string(),
                 }),
                 OneOf::Left(TextEdit {
                     range: Range {
-                        start: Position { line: 1, character: 17 },
-                        end: Position { line: 1, character: 22 },
+                        start: Position {
+                            line: 1,
+                            character: 17,
+                        },
+                        end: Position {
+                            line: 1,
+                            character: 22,
+                        },
                     },
                     new_text: "amount".to_string(),
                 }),
@@ -1989,15 +2001,27 @@ fn test_lsp_rename_consecutive_same_position() -> std::io::Result<()> {
             edits: vec![
                 OneOf::Left(TextEdit {
                     range: Range {
-                        start: Position { line: 0, character: 13 },
-                        end: Position { line: 0, character: 19 }, // "amount" is 6 chars
+                        start: Position {
+                            line: 0,
+                            character: 13,
+                        },
+                        end: Position {
+                            line: 0,
+                            character: 19,
+                        }, // "amount" is 6 chars
                     },
                     new_text: "total".to_string(),
                 }),
                 OneOf::Left(TextEdit {
                     range: Range {
-                        start: Position { line: 1, character: 17 },
-                        end: Position { line: 1, character: 23 },
+                        start: Position {
+                            line: 1,
+                            character: 17,
+                        },
+                        end: Position {
+                            line: 1,
+                            character: 23,
+                        },
                     },
                     new_text: "total".to_string(),
                 }),
@@ -2091,11 +2115,7 @@ edition = "2021"
 
         // Check actual LSP server status
         if harness.editor().is_lsp_server_ready("rust") {
-            eprintln!(
-                "✓ rust-analyzer ready (iteration {}, {}ms)",
-                i,
-                i * 100
-            );
+            eprintln!("✓ rust-analyzer ready (iteration {}, {}ms)", i, i * 100);
             lsp_ready = true;
             break;
         }
@@ -2109,7 +2129,10 @@ edition = "2021"
 
     if !lsp_ready {
         let lsp_status = harness.editor().get_lsp_status();
-        eprintln!("⚠ Warning: LSP may not have initialized fully. Status: {}", lsp_status);
+        eprintln!(
+            "⚠ Warning: LSP may not have initialized fully. Status: {}",
+            lsp_status
+        );
         eprintln!("Continuing test anyway...");
     }
 
@@ -2166,7 +2189,10 @@ edition = "2021"
     harness.render()?;
     let cursor_pos = harness.cursor_position();
     let char_at_cursor = initial.chars().nth(cursor_pos).unwrap_or('?');
-    eprintln!("Cursor positioned at byte {}, char '{}'", cursor_pos, char_at_cursor);
+    eprintln!(
+        "Cursor positioned at byte {}, char '{}'",
+        cursor_pos, char_at_cursor
+    );
 
     // Step 2: Start rename with F2 (direct action, not command palette)
     eprintln!("Pressing F2 to start rename...");
@@ -2526,16 +2552,19 @@ fn test_lsp_crash_detection_and_restart() -> std::io::Result<()> {
         }
 
         // Also check the status bar area specifically
-        if let Some(msg) = harness
-            .editor()
-            .get_status_message()
-            .cloned()
-        {
+        if let Some(msg) = harness.editor().get_status_message().cloned() {
             // Look for error or crash indications
-            if msg.contains("error") || msg.contains("crashed") || msg.contains("restarting") || msg.contains("Error") {
+            if msg.contains("error")
+                || msg.contains("crashed")
+                || msg.contains("restarting")
+                || msg.contains("Error")
+            {
                 crash_detected = true;
                 status_msg = msg;
-                eprintln!("Iteration {}: Crash/error detected with message: {}", i, status_msg);
+                eprintln!(
+                    "Iteration {}: Crash/error detected with message: {}",
+                    i, status_msg
+                );
                 break;
             }
         }
@@ -2605,7 +2634,10 @@ fn test_lsp_restart_command_exists() -> std::io::Result<()> {
     let mut harness = EditorTestHarness::new(80, 24)?;
 
     // Open command palette with Ctrl+Shift+P
-    harness.send_key(KeyCode::Char('P'), KeyModifiers::CONTROL | KeyModifiers::SHIFT)?;
+    harness.send_key(
+        KeyCode::Char('P'),
+        KeyModifiers::CONTROL | KeyModifiers::SHIFT,
+    )?;
     harness.render()?;
 
     // Type to search for restart command
@@ -2659,8 +2691,14 @@ fn test_pull_diagnostics_message_handling() -> std::io::Result<()> {
     // Create a test diagnostic
     let diagnostic = Diagnostic {
         range: lsp_types::Range {
-            start: lsp_types::Position { line: 1, character: 4 },
-            end: lsp_types::Position { line: 1, character: 15 },
+            start: lsp_types::Position {
+                line: 1,
+                character: 4,
+            },
+            end: lsp_types::Position {
+                line: 1,
+                character: 15,
+            },
         },
         severity: Some(lsp_types::DiagnosticSeverity::WARNING),
         code: None,
@@ -2724,7 +2762,7 @@ fn test_pull_diagnostics_unchanged_response() -> std::io::Result<()> {
             request_id: 2,
             uri: uri.as_str().to_string(),
             result_id: Some("test-result-id-456".to_string()),
-            diagnostics: Vec::new(),  // Empty when unchanged
+            diagnostics: Vec::new(), // Empty when unchanged
             unchanged: true,
         });
     }
@@ -2767,8 +2805,12 @@ fn test_pull_diagnostics_auto_trigger_after_open() -> std::io::Result<()> {
     std::fs::write(&test_file, "hello world")?;
 
     // Create harness with config
-    let mut harness =
-        EditorTestHarness::with_config_and_working_dir(80, 24, config, temp_dir.path().to_path_buf())?;
+    let mut harness = EditorTestHarness::with_config_and_working_dir(
+        80,
+        24,
+        config,
+        temp_dir.path().to_path_buf(),
+    )?;
 
     // Open the file - this should trigger didOpen and then pull diagnostics
     harness.open_file(&test_file)?;
@@ -2838,8 +2880,12 @@ fn test_pull_diagnostics_result_id_tracking() -> std::io::Result<()> {
     std::fs::write(&test_file, "hello world")?;
 
     // Create harness with config
-    let mut harness =
-        EditorTestHarness::with_config_and_working_dir(80, 24, config, temp_dir.path().to_path_buf())?;
+    let mut harness = EditorTestHarness::with_config_and_working_dir(
+        80,
+        24,
+        config,
+        temp_dir.path().to_path_buf(),
+    )?;
 
     // Open the file - this should trigger first pull diagnostics request
     harness.open_file(&test_file)?;
@@ -3055,7 +3101,10 @@ done
         std::thread::sleep(Duration::from_millis(50));
     }
 
-    eprintln!("Screen before find references:\n{}", harness.screen_to_string());
+    eprintln!(
+        "Screen before find references:\n{}",
+        harness.screen_to_string()
+    );
 
     // Move cursor to the function name (line 1, after "fn ")
     harness.send_key(KeyCode::Right, KeyModifiers::NONE)?;
@@ -3223,7 +3272,10 @@ fn main() {
         eprintln!("Warning: LSP may not be fully ready, continuing anyway...");
     }
 
-    eprintln!("Screen before find references:\n{}", harness.screen_to_string());
+    eprintln!(
+        "Screen before find references:\n{}",
+        harness.screen_to_string()
+    );
 
     // Move cursor to the function name "helper_function" on line 1
     // The function starts at column 3 (after "fn "), move to column 7 to be clearly inside
@@ -3258,7 +3310,9 @@ fn main() {
         }
 
         // Look for actual panel content - should show references to helper_function
-        if screen.contains("═══ References") || screen.contains("helper_function") && screen.contains("main.rs:") {
+        if screen.contains("═══ References")
+            || screen.contains("helper_function") && screen.contains("main.rs:")
+        {
             eprintln!("References panel appeared after {} iterations", i + 1);
             panel_appeared = true;
             break;
@@ -3412,10 +3466,7 @@ fn test_inlay_hints_position_tracking() -> std::io::Result<()> {
 
     // Verify hint is visible
     let screen = harness.screen_to_string();
-    assert!(
-        screen.contains(": i32"),
-        "Initial hint should be visible"
-    );
+    assert!(screen.contains(": i32"), "Initial hint should be visible");
 
     // Now insert text before the hint position
     // Move cursor to beginning

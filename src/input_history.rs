@@ -368,11 +368,12 @@ impl InputHistory {
 /// Returns $XDG_DATA_HOME/fresh or ~/.local/share/fresh on Linux
 /// Returns ~/Library/Application Support/fresh on macOS
 pub fn get_data_dir() -> std::io::Result<std::path::PathBuf> {
-    let data_dir = dirs::data_dir()
-        .ok_or_else(|| std::io::Error::new(
+    let data_dir = dirs::data_dir().ok_or_else(|| {
+        std::io::Error::new(
             std::io::ErrorKind::NotFound,
-            "Could not determine data directory"
-        ))?;
+            "Could not determine data directory",
+        )
+    })?;
     Ok(data_dir.join("fresh"))
 }
 

@@ -38,7 +38,10 @@ fn test_auto_close_parenthesis() {
 
     // Cursor should be between the parens
     let cursor_pos = harness.editor().active_state().cursors.primary().position;
-    assert_eq!(cursor_pos, 8, "Cursor should be between parens (at position 8)");
+    assert_eq!(
+        cursor_pos, 8,
+        "Cursor should be between parens (at position 8)"
+    );
 }
 
 /// Test that opening square bracket auto-closes
@@ -56,10 +59,7 @@ fn test_auto_close_square_bracket() {
     harness.render().unwrap();
 
     let content = harness.get_buffer_content();
-    assert_eq!(
-        content, "let arr = []",
-        "Opening bracket should auto-close"
-    );
+    assert_eq!(content, "let arr = []", "Opening bracket should auto-close");
 }
 
 /// Test that opening curly brace auto-closes
@@ -77,10 +77,7 @@ fn test_auto_close_curly_brace() {
     harness.render().unwrap();
 
     let content = harness.get_buffer_content();
-    assert_eq!(
-        content, "struct Foo {}",
-        "Opening brace should auto-close"
-    );
+    assert_eq!(content, "struct Foo {}", "Opening brace should auto-close");
 }
 
 /// Test that double quotes auto-close
@@ -234,9 +231,7 @@ fn test_auto_pair_delete_parentheses() {
 
     // Position cursor between parens (after the opening paren)
     harness.send_key(KeyCode::End, KeyModifiers::NONE).unwrap();
-    harness
-        .send_key(KeyCode::Left, KeyModifiers::NONE)
-        .unwrap(); // Before )
+    harness.send_key(KeyCode::Left, KeyModifiers::NONE).unwrap(); // Before )
 
     // Delete backward - should delete both ( and )
     harness
@@ -263,9 +258,7 @@ fn test_auto_pair_delete_square_brackets() {
 
     // Position cursor between brackets
     harness.send_key(KeyCode::End, KeyModifiers::NONE).unwrap();
-    harness
-        .send_key(KeyCode::Left, KeyModifiers::NONE)
-        .unwrap(); // Before ]
+    harness.send_key(KeyCode::Left, KeyModifiers::NONE).unwrap(); // Before ]
 
     // Delete backward
     harness
@@ -292,9 +285,7 @@ fn test_auto_pair_delete_curly_braces() {
 
     // Position cursor between braces
     harness.send_key(KeyCode::End, KeyModifiers::NONE).unwrap();
-    harness
-        .send_key(KeyCode::Left, KeyModifiers::NONE)
-        .unwrap(); // Before }
+    harness.send_key(KeyCode::Left, KeyModifiers::NONE).unwrap(); // Before }
 
     // Delete backward
     harness
@@ -321,9 +312,7 @@ fn test_auto_pair_delete_double_quotes() {
 
     // Position cursor between quotes
     harness.send_key(KeyCode::End, KeyModifiers::NONE).unwrap();
-    harness
-        .send_key(KeyCode::Left, KeyModifiers::NONE)
-        .unwrap(); // Before closing "
+    harness.send_key(KeyCode::Left, KeyModifiers::NONE).unwrap(); // Before closing "
 
     // Delete backward
     harness
@@ -350,9 +339,7 @@ fn test_auto_pair_delete_single_quotes() {
 
     // Position cursor between quotes
     harness.send_key(KeyCode::End, KeyModifiers::NONE).unwrap();
-    harness
-        .send_key(KeyCode::Left, KeyModifiers::NONE)
-        .unwrap(); // Before closing '
+    harness.send_key(KeyCode::Left, KeyModifiers::NONE).unwrap(); // Before closing '
 
     // Delete backward
     harness
@@ -379,9 +366,7 @@ fn test_no_pair_delete_with_content_between() {
 
     // Position cursor after x (between x and closing paren)
     harness.send_key(KeyCode::End, KeyModifiers::NONE).unwrap();
-    harness
-        .send_key(KeyCode::Left, KeyModifiers::NONE)
-        .unwrap(); // Before )
+    harness.send_key(KeyCode::Left, KeyModifiers::NONE).unwrap(); // Before )
 
     // Delete backward - should only delete x, not the whole pair
     harness
@@ -429,9 +414,7 @@ fn test_macro_recording_toggle() {
     );
 
     // Stop recording with F5
-    harness
-        .send_key(KeyCode::F(5), KeyModifiers::NONE)
-        .unwrap();
+    harness.send_key(KeyCode::F(5), KeyModifiers::NONE).unwrap();
     harness.render().unwrap();
 
     let status = harness
@@ -474,9 +457,7 @@ fn test_macro_record_and_playback() {
     harness.send_key(KeyCode::Home, KeyModifiers::NONE).unwrap();
 
     // Stop recording
-    harness
-        .send_key(KeyCode::F(5), KeyModifiers::NONE)
-        .unwrap();
+    harness.send_key(KeyCode::F(5), KeyModifiers::NONE).unwrap();
     harness.render().unwrap();
 
     let content = harness.get_buffer_content();
@@ -489,7 +470,10 @@ fn test_macro_record_and_playback() {
 
     // Play macro 1 with Ctrl+Alt+1 to process line2
     harness
-        .send_key(KeyCode::Char('1'), KeyModifiers::CONTROL | KeyModifiers::ALT)
+        .send_key(
+            KeyCode::Char('1'),
+            KeyModifiers::CONTROL | KeyModifiers::ALT,
+        )
         .unwrap();
     harness.render().unwrap();
 
@@ -503,7 +487,10 @@ fn test_macro_record_and_playback() {
 
     // Play macro again for line3
     harness
-        .send_key(KeyCode::Char('1'), KeyModifiers::CONTROL | KeyModifiers::ALT)
+        .send_key(
+            KeyCode::Char('1'),
+            KeyModifiers::CONTROL | KeyModifiers::ALT,
+        )
         .unwrap();
     harness.render().unwrap();
 
@@ -544,9 +531,7 @@ fn test_multiple_macro_slots() {
     );
 
     // Stop recording
-    harness
-        .send_key(KeyCode::F(5), KeyModifiers::NONE)
-        .unwrap();
+    harness.send_key(KeyCode::F(5), KeyModifiers::NONE).unwrap();
 
     // Record macro in slot 9
     harness
@@ -565,9 +550,7 @@ fn test_multiple_macro_slots() {
         status
     );
 
-    harness
-        .send_key(KeyCode::F(5), KeyModifiers::NONE)
-        .unwrap();
+    harness.send_key(KeyCode::F(5), KeyModifiers::NONE).unwrap();
 }
 
 /// Test playing a macro that doesn't exist
@@ -582,7 +565,10 @@ fn test_play_nonexistent_macro() {
 
     // Try to play macro 7 (which was never recorded)
     harness
-        .send_key(KeyCode::Char('7'), KeyModifiers::CONTROL | KeyModifiers::ALT)
+        .send_key(
+            KeyCode::Char('7'),
+            KeyModifiers::CONTROL | KeyModifiers::ALT,
+        )
         .unwrap();
     harness.render().unwrap();
 
@@ -652,7 +638,10 @@ fn test_toggle_macro_recording() {
 // =============================================================================
 
 /// Helper to create and apply diagnostics to the editor state
-fn apply_test_diagnostics(harness: &mut EditorTestHarness, diagnostics: Vec<lsp_types::Diagnostic>) {
+fn apply_test_diagnostics(
+    harness: &mut EditorTestHarness,
+    diagnostics: Vec<lsp_types::Diagnostic>,
+) {
     let state = harness.editor_mut().active_state_mut();
     let theme = fresh::theme::Theme::dark();
     fresh::lsp_diagnostics::apply_diagnostics_to_state(state, &diagnostics, &theme);
@@ -709,9 +698,7 @@ fn test_jump_to_next_error() {
     harness.send_key(KeyCode::Home, KeyModifiers::NONE).unwrap();
 
     // Jump to next error (F8) - should go to line 2 (index 1)
-    harness
-        .send_key(KeyCode::F(8), KeyModifiers::NONE)
-        .unwrap();
+    harness.send_key(KeyCode::F(8), KeyModifiers::NONE).unwrap();
     harness.render().unwrap();
 
     // Check cursor position - should be at start of line 2 (byte offset 6)
@@ -753,7 +740,9 @@ fn test_jump_to_previous_error() {
     apply_test_diagnostics(&mut harness, diagnostics);
 
     // Position cursor at end (line 5)
-    harness.send_key(KeyCode::End, KeyModifiers::CONTROL).unwrap();
+    harness
+        .send_key(KeyCode::End, KeyModifiers::CONTROL)
+        .unwrap();
 
     // Jump to previous error (Shift+F8) - should go to line 4 (index 3)
     harness
@@ -801,9 +790,7 @@ fn test_jump_to_next_error_wraps() {
     harness.send_key(KeyCode::Down, KeyModifiers::NONE).unwrap();
 
     // Jump to next error - should wrap to line 1
-    harness
-        .send_key(KeyCode::F(8), KeyModifiers::NONE)
-        .unwrap();
+    harness.send_key(KeyCode::F(8), KeyModifiers::NONE).unwrap();
     harness.render().unwrap();
 
     let cursor_pos = harness.editor().active_state().cursors.primary().position;
@@ -826,9 +813,7 @@ fn test_jump_to_error_no_diagnostics() {
     // No diagnostics applied
 
     // Try to jump to next error
-    harness
-        .send_key(KeyCode::F(8), KeyModifiers::NONE)
-        .unwrap();
+    harness.send_key(KeyCode::F(8), KeyModifiers::NONE).unwrap();
     harness.render().unwrap();
 
     // Check status message indicates no errors
@@ -870,21 +855,15 @@ fn test_jump_through_multiple_errors() {
     harness.send_key(KeyCode::Home, KeyModifiers::NONE).unwrap();
 
     // Jump to next error - should be at line 0 (already there, or next one at line 1)
-    harness
-        .send_key(KeyCode::F(8), KeyModifiers::NONE)
-        .unwrap();
+    harness.send_key(KeyCode::F(8), KeyModifiers::NONE).unwrap();
     let pos1 = harness.editor().active_state().cursors.primary().position;
 
     // Jump again
-    harness
-        .send_key(KeyCode::F(8), KeyModifiers::NONE)
-        .unwrap();
+    harness.send_key(KeyCode::F(8), KeyModifiers::NONE).unwrap();
     let pos2 = harness.editor().active_state().cursors.primary().position;
 
     // Jump again
-    harness
-        .send_key(KeyCode::F(8), KeyModifiers::NONE)
-        .unwrap();
+    harness.send_key(KeyCode::F(8), KeyModifiers::NONE).unwrap();
     let pos3 = harness.editor().active_state().cursors.primary().position;
 
     // All positions should be different (cycling through errors)
@@ -929,10 +908,7 @@ fn test_block_selection_start() {
     );
 
     // Block anchor should be set
-    assert!(
-        cursor.block_anchor.is_some(),
-        "Block anchor should be set"
-    );
+    assert!(cursor.block_anchor.is_some(), "Block anchor should be set");
 
     let anchor = cursor.block_anchor.unwrap();
     assert_eq!(anchor.line, 0, "Block anchor line should be 0");
@@ -956,7 +932,9 @@ fn test_block_selection_vertical() {
     harness.open_file(&file_path).unwrap();
 
     // Position cursor at column 1 (after 'a')
-    harness.send_key(KeyCode::Right, KeyModifiers::NONE).unwrap();
+    harness
+        .send_key(KeyCode::Right, KeyModifiers::NONE)
+        .unwrap();
 
     // Start block selection with Alt+Shift+Down
     harness
@@ -991,7 +969,9 @@ fn test_block_selection_rectangle() {
     harness.open_file(&file_path).unwrap();
 
     // Move cursor to position 1 (after 'a')
-    harness.send_key(KeyCode::Right, KeyModifiers::NONE).unwrap();
+    harness
+        .send_key(KeyCode::Right, KeyModifiers::NONE)
+        .unwrap();
 
     // Extend block selection right twice (columns 1-3)
     harness
@@ -1044,9 +1024,15 @@ fn test_block_selection_left() {
     harness.open_file(&file_path).unwrap();
 
     // Move cursor to position 3
-    harness.send_key(KeyCode::Right, KeyModifiers::NONE).unwrap();
-    harness.send_key(KeyCode::Right, KeyModifiers::NONE).unwrap();
-    harness.send_key(KeyCode::Right, KeyModifiers::NONE).unwrap();
+    harness
+        .send_key(KeyCode::Right, KeyModifiers::NONE)
+        .unwrap();
+    harness
+        .send_key(KeyCode::Right, KeyModifiers::NONE)
+        .unwrap();
+    harness
+        .send_key(KeyCode::Right, KeyModifiers::NONE)
+        .unwrap();
 
     // Start block selection with Alt+Shift+Left
     harness

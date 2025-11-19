@@ -172,7 +172,7 @@ impl Language {
                     tree_sitter_typescript::LANGUAGE_TYPESCRIPT.into(),
                     "typescript",
                     &combined_highlights,
-                    "", // injections query
+                    "",                                   // injections query
                     tree_sitter_typescript::LOCALS_QUERY, // locals query for proper scoping
                 )
                 .map_err(|e| format!("Failed to create TypeScript highlight config: {e}"))?;
@@ -573,30 +573,30 @@ impl Language {
             },
             Language::TypeScript => match index {
                 // Maps to the configure() order in highlight_config
-                0 => Color::Cyan,      // attribute
-                1 => Color::DarkGray,  // comment
-                2 => Color::Magenta,   // constant
-                3 => Color::Magenta,   // constant.builtin (null, undefined, true, false)
-                4 => Color::Blue,      // constructor
-                5 => Color::Green,     // embedded (template substitutions)
-                6 => Color::Yellow,    // function
-                7 => Color::Yellow,    // function.builtin (require)
-                8 => Color::Yellow,    // function.method
-                9 => Color::Red,       // keyword
-                10 => Color::Magenta,  // number
-                11 => Color::White,    // operator
-                12 => Color::Cyan,     // property
-                13 => Color::White,    // punctuation.bracket
-                14 => Color::White,    // punctuation.delimiter
-                15 => Color::Cyan,     // punctuation.special (template ${})
-                16 => Color::Green,    // string
-                17 => Color::Green,    // string.special (regex)
-                18 => Color::Blue,     // type
-                19 => Color::Blue,     // type.builtin
-                20 => Color::White,    // variable
-                21 => Color::Magenta,  // variable.builtin (this, super, arguments)
+                0 => Color::Cyan,       // attribute
+                1 => Color::DarkGray,   // comment
+                2 => Color::Magenta,    // constant
+                3 => Color::Magenta,    // constant.builtin (null, undefined, true, false)
+                4 => Color::Blue,       // constructor
+                5 => Color::Green,      // embedded (template substitutions)
+                6 => Color::Yellow,     // function
+                7 => Color::Yellow,     // function.builtin (require)
+                8 => Color::Yellow,     // function.method
+                9 => Color::Red,        // keyword
+                10 => Color::Magenta,   // number
+                11 => Color::White,     // operator
+                12 => Color::Cyan,      // property
+                13 => Color::White,     // punctuation.bracket
+                14 => Color::White,     // punctuation.delimiter
+                15 => Color::Cyan,      // punctuation.special (template ${})
+                16 => Color::Green,     // string
+                17 => Color::Green,     // string.special (regex)
+                18 => Color::Blue,      // type
+                19 => Color::Blue,      // type.builtin
+                20 => Color::White,     // variable
+                21 => Color::Magenta,   // variable.builtin (this, super, arguments)
                 22 => Color::LightCyan, // variable.parameter
-                _ => Color::White,     // default
+                _ => Color::White,      // default
             },
             Language::HTML | Language::CSS => match index {
                 0 => Color::Cyan,     // attribute

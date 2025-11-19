@@ -247,10 +247,7 @@ pub enum MenuItem {
         when: Option<String>,
     },
     /// A submenu (for future extensibility)
-    Submenu {
-        label: String,
-        items: Vec<MenuItem>,
-    },
+    Submenu { label: String, items: Vec<MenuItem> },
 }
 
 impl Default for Config {
@@ -973,14 +970,12 @@ impl Config {
             // Help menu
             Menu {
                 label: "Help".to_string(),
-                items: vec![
-                    MenuItem::Action {
-                        label: "Show Help".to_string(),
-                        action: "show_help".to_string(),
-                        args: HashMap::new(),
-                        when: None,
-                    },
-                ],
+                items: vec![MenuItem::Action {
+                    label: "Show Help".to_string(),
+                    action: "show_help".to_string(),
+                    args: HashMap::new(),
+                    when: None,
+                }],
             },
         ]
     }

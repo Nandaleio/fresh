@@ -97,8 +97,7 @@ impl AnsiParser {
         // Check for OSC sequences (ESC ])
         if self.escape_buffer.starts_with("\x1b]") {
             // OSC sequences end with BEL (\x07) or ST (ESC \)
-            return self.escape_buffer.ends_with('\x07')
-                || self.escape_buffer.ends_with("\x1b\\");
+            return self.escape_buffer.ends_with('\x07') || self.escape_buffer.ends_with("\x1b\\");
         }
 
         // Simple two-character sequences (ESC followed by single char)
@@ -156,40 +155,24 @@ impl AnsiParser {
                 2 => self.current_style = self.current_style.add_modifier(Modifier::DIM),
                 3 => self.current_style = self.current_style.add_modifier(Modifier::ITALIC),
                 4 => self.current_style = self.current_style.add_modifier(Modifier::UNDERLINED),
-                5 => {
-                    self.current_style = self.current_style.add_modifier(Modifier::SLOW_BLINK)
-                }
+                5 => self.current_style = self.current_style.add_modifier(Modifier::SLOW_BLINK),
                 7 => self.current_style = self.current_style.add_modifier(Modifier::REVERSED),
                 8 => self.current_style = self.current_style.add_modifier(Modifier::HIDDEN),
-                9 => {
-                    self.current_style = self.current_style.add_modifier(Modifier::CROSSED_OUT)
-                }
+                9 => self.current_style = self.current_style.add_modifier(Modifier::CROSSED_OUT),
 
                 // Reset attributes
-                21 => {
-                    self.current_style = self.current_style.remove_modifier(Modifier::BOLD)
-                }
+                21 => self.current_style = self.current_style.remove_modifier(Modifier::BOLD),
                 22 => {
                     self.current_style = self
                         .current_style
                         .remove_modifier(Modifier::BOLD)
                         .remove_modifier(Modifier::DIM)
                 }
-                23 => {
-                    self.current_style = self.current_style.remove_modifier(Modifier::ITALIC)
-                }
-                24 => {
-                    self.current_style = self.current_style.remove_modifier(Modifier::UNDERLINED)
-                }
-                25 => {
-                    self.current_style = self.current_style.remove_modifier(Modifier::SLOW_BLINK)
-                }
-                27 => {
-                    self.current_style = self.current_style.remove_modifier(Modifier::REVERSED)
-                }
-                28 => {
-                    self.current_style = self.current_style.remove_modifier(Modifier::HIDDEN)
-                }
+                23 => self.current_style = self.current_style.remove_modifier(Modifier::ITALIC),
+                24 => self.current_style = self.current_style.remove_modifier(Modifier::UNDERLINED),
+                25 => self.current_style = self.current_style.remove_modifier(Modifier::SLOW_BLINK),
+                27 => self.current_style = self.current_style.remove_modifier(Modifier::REVERSED),
+                28 => self.current_style = self.current_style.remove_modifier(Modifier::HIDDEN),
                 29 => {
                     self.current_style = self.current_style.remove_modifier(Modifier::CROSSED_OUT)
                 }

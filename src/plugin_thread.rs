@@ -198,13 +198,7 @@ impl PluginThreadHandle {
             local.block_on(&rt, async {
                 // Wrap runtime in RefCell for interior mutability during concurrent operations
                 let runtime = Rc::new(RefCell::new(runtime));
-                plugin_thread_loop(
-                    runtime,
-                    &mut plugins,
-                    &thread_commands,
-                    request_receiver,
-                )
-                .await;
+                plugin_thread_loop(runtime, &mut plugins, &thread_commands, request_receiver).await;
             });
 
             tracing::info!("Plugin thread shutting down");
@@ -227,19 +221,27 @@ impl PluginThreadHandle {
     /// This is called by the editor after processing a command that requires a response.
     pub fn deliver_response(&self, response: crate::plugin_api::PluginResponse) {
         let request_id = match &response {
-            crate::plugin_api::PluginResponse::VirtualBufferCreated { request_id, .. } => *request_id,
+            crate::plugin_api::PluginResponse::VirtualBufferCreated { request_id, .. } => {
+                *request_id
+            }
         };
 
         tracing::trace!("deliver_response: request_id={}", request_id);
 
         let sender = {
             let mut pending = self.pending_responses.lock().unwrap();
-            tracing::trace!("deliver_response: pending_responses has {} entries", pending.len());
+            tracing::trace!(
+                "deliver_response: pending_responses has {} entries",
+                pending.len()
+            );
             pending.remove(&request_id)
         };
 
         if let Some(tx) = sender {
-            tracing::trace!("deliver_response: sending response for request_id={}", request_id);
+            tracing::trace!(
+                "deliver_response: sending response for request_id={}",
+                request_id
+            );
             let _ = tx.send(response);
         } else {
             tracing::warn!("No pending response sender for request_id {}", request_id);
@@ -256,8 +258,7 @@ impl PluginThreadHandle {
             })
             .map_err(|_| anyhow!("Plugin thread not responding"))?;
 
-        rx.recv()
-            .map_err(|_| anyhow!("Plugin thread closed"))?
+        rx.recv().map_err(|_| anyhow!("Plugin thread closed"))?
     }
 
     /// Load all plugins from a directory (blocking)
@@ -288,8 +289,7 @@ impl PluginThreadHandle {
             })
             .map_err(|_| anyhow!("Plugin thread not responding"))?;
 
-        rx.recv()
-            .map_err(|_| anyhow!("Plugin thread closed"))?
+        rx.recv().map_err(|_| anyhow!("Plugin thread closed"))?
     }
 
     /// Reload a plugin (blocking)
@@ -302,8 +302,7 @@ impl PluginThreadHandle {
             })
             .map_err(|_| anyhow!("Plugin thread not responding"))?;
 
-        rx.recv()
-            .map_err(|_| anyhow!("Plugin thread closed"))?
+        rx.recv().map_err(|_| anyhow!("Plugin thread closed"))?
     }
 
     /// Execute a plugin action (non-blocking)
@@ -418,23 +417,16 @@ async fn plugin_thread_loop(
     loop {
         // Wait for requests (async, no polling/sleeping)
         match request_receiver.recv().await {
-            Some(PluginRequest::ExecuteAction { action_name, response }) => {
+            Some(PluginRequest::ExecuteAction {
+                action_name,
+                response,
+            }) => {
                 // Handle ExecuteAction specially
-                execute_action_with_hooks(
-                    &action_name,
-                    response,
-                    Rc::clone(&runtime),
-                )
-                .await;
+                execute_action_with_hooks(&action_name, response, Rc::clone(&runtime)).await;
             }
             Some(request) => {
-                let should_shutdown = handle_request(
-                    request,
-                    Rc::clone(&runtime),
-                    plugins,
-                    commands,
-                )
-                .await;
+                let should_shutdown =
+                    handle_request(request, Rc::clone(&runtime), plugins, commands).await;
 
                 if should_shutdown {
                     break;
@@ -458,7 +450,10 @@ async fn execute_action_with_hooks(
     response: oneshot::Sender<Result<()>>,
     runtime: Rc<RefCell<TypeScriptRuntime>>,
 ) {
-    tracing::trace!("execute_action_with_hooks: starting action '{}'", action_name);
+    tracing::trace!(
+        "execute_action_with_hooks: starting action '{}'",
+        action_name
+    );
 
     // Execute the action - we can't process hooks during this because the runtime
     // is borrowed. Instead, we need a different approach to break the deadlock.
@@ -475,8 +470,11 @@ async fn execute_action_with_hooks(
 
     let result = runtime.borrow_mut().execute_action(action_name).await;
 
-    tracing::trace!("execute_action_with_hooks: action '{}' completed with result: {:?}",
-        action_name, result.is_ok());
+    tracing::trace!(
+        "execute_action_with_hooks: action '{}' completed with result: {:?}",
+        action_name,
+        result.is_ok()
+    );
     let _ = response.send(result);
 }
 
@@ -519,7 +517,8 @@ async fn handle_request(
         }
 
         PluginRequest::ReloadPlugin { name, response } => {
-            let result = reload_plugin_internal(Rc::clone(&runtime), plugins, commands, &name).await;
+            let result =
+                reload_plugin_internal(Rc::clone(&runtime), plugins, commands, &name).await;
             let _ = response.send(result);
         }
 
@@ -529,8 +528,13 @@ async fn handle_request(
         } => {
             // This is handled in plugin_thread_loop with select! for concurrent processing
             // If we get here, it's an unexpected state
-            tracing::error!("ExecuteAction should be handled in main loop, not here: {}", action_name);
-            let _ = response.send(Err(anyhow::anyhow!("Internal error: ExecuteAction in wrong handler")));
+            tracing::error!(
+                "ExecuteAction should be handled in main loop, not here: {}",
+                action_name
+            );
+            let _ = response.send(Err(anyhow::anyhow!(
+                "Internal error: ExecuteAction in wrong handler"
+            )));
         }
 
         PluginRequest::RunHook { hook_name, args } => {
@@ -616,7 +620,8 @@ async fn load_plugins_from_dir_internal(
                 let path = entry.path();
                 let ext = path.extension().and_then(|s| s.to_str());
                 if ext == Some("ts") || ext == Some("js") {
-                    if let Err(e) = load_plugin_internal(Rc::clone(&runtime), plugins, &path).await {
+                    if let Err(e) = load_plugin_internal(Rc::clone(&runtime), plugins, &path).await
+                    {
                         let err = format!("Failed to load {:?}: {}", path, e);
                         tracing::error!("{}", err);
                         errors.push(err);

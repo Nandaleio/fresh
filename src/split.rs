@@ -224,7 +224,10 @@ impl SplitNode {
 
     /// Get all split separator lines with their split IDs (for mouse hit testing)
     /// Returns (split_id, direction, x, y, length) tuples
-    pub fn get_separators_with_ids(&self, rect: Rect) -> Vec<(SplitId, SplitDirection, u16, u16, u16)> {
+    pub fn get_separators_with_ids(
+        &self,
+        rect: Rect,
+    ) -> Vec<(SplitId, SplitDirection, u16, u16, u16)> {
         match self {
             SplitNode::Leaf { .. } => vec![],
             SplitNode::Split {
@@ -422,7 +425,11 @@ impl SplitManager {
 
     /// Update the buffer ID of a specific split
     /// Returns Ok(()) if successful, Err with message if split not found or not a leaf
-    pub fn set_split_buffer(&mut self, split_id: SplitId, new_buffer_id: BufferId) -> Result<(), String> {
+    pub fn set_split_buffer(
+        &mut self,
+        split_id: SplitId,
+        new_buffer_id: BufferId,
+    ) -> Result<(), String> {
         if let Some(node) = self.root.find_mut(split_id) {
             if let SplitNode::Leaf { buffer_id, .. } = node {
                 *buffer_id = new_buffer_id;
@@ -601,7 +608,10 @@ impl SplitManager {
 
     /// Get all split separator positions with their split IDs (for mouse hit testing)
     /// Returns (split_id, direction, x, y, length) tuples
-    pub fn get_separators_with_ids(&self, viewport_rect: Rect) -> Vec<(SplitId, SplitDirection, u16, u16, u16)> {
+    pub fn get_separators_with_ids(
+        &self,
+        viewport_rect: Rect,
+    ) -> Vec<(SplitId, SplitDirection, u16, u16, u16)> {
         self.root.get_separators_with_ids(viewport_rect)
     }
 
@@ -645,7 +655,11 @@ impl SplitManager {
     pub fn prev_split(&mut self) {
         let leaf_ids = self.root.leaf_split_ids();
         if let Some(pos) = leaf_ids.iter().position(|id| *id == self.active_split) {
-            let prev_pos = if pos == 0 { leaf_ids.len() - 1 } else { pos - 1 };
+            let prev_pos = if pos == 0 {
+                leaf_ids.len() - 1
+            } else {
+                pos - 1
+            };
             self.active_split = leaf_ids[prev_pos];
         }
     }

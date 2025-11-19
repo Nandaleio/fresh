@@ -47,7 +47,12 @@ impl StatusBarRenderer {
     }
 
     /// Render the prompt/minibuffer
-    pub fn render_prompt(frame: &mut Frame, area: Rect, prompt: &Prompt, theme: &crate::theme::Theme) {
+    pub fn render_prompt(
+        frame: &mut Frame,
+        area: Rect,
+        prompt: &Prompt,
+        theme: &crate::theme::Theme,
+    ) {
         let base_style = Style::default().fg(theme.prompt_fg).bg(theme.prompt_bg);
 
         // Create spans for the prompt
@@ -190,7 +195,10 @@ impl StatusBarRenderer {
         // Build Command Palette indicator for right side
         // Always show Command Palette indicator on the right side
         let cmd_palette_shortcut = keybindings
-            .get_keybinding_for_action(&crate::keybindings::Action::CommandPalette, crate::keybindings::KeyContext::Global)
+            .get_keybinding_for_action(
+                &crate::keybindings::Action::CommandPalette,
+                crate::keybindings::KeyContext::Global,
+            )
             .unwrap_or_else(|| "?".to_string());
         let cmd_palette_indicator = format!("Palette: {}", cmd_palette_shortcut);
         let padded_cmd_palette = format!(" {} ", cmd_palette_indicator);

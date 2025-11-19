@@ -342,14 +342,14 @@ pub enum Action {
     QueryReplace, // Interactive replace (y/n/!/q for each match)
 
     // Menu navigation
-    MenuActivate,      // Open menu bar (Alt or F10)
-    MenuClose,         // Close menu (Esc)
-    MenuLeft,          // Navigate to previous menu
-    MenuRight,         // Navigate to next menu
-    MenuUp,            // Navigate to previous item in menu
-    MenuDown,          // Navigate to next item in menu
-    MenuExecute,       // Execute selected menu item (Enter)
-    MenuOpen(String),  // Open a specific menu by name (e.g., "File", "Edit")
+    MenuActivate,     // Open menu bar (Alt or F10)
+    MenuClose,        // Close menu (Esc)
+    MenuLeft,         // Navigate to previous menu
+    MenuRight,        // Navigate to next menu
+    MenuUp,           // Navigate to previous item in menu
+    MenuDown,         // Navigate to next item in menu
+    MenuExecute,      // Execute selected menu item (Enter)
+    MenuOpen(String), // Open a specific menu by name (e.g., "File", "Edit")
 
     // Plugin custom actions
     PluginAction(String),
@@ -747,7 +747,11 @@ impl KeybindingResolver {
 
     /// Find the primary keybinding for a given action (for display in menus)
     /// Returns a formatted string like "Ctrl+S" or "F12"
-    pub fn find_keybinding_for_action(&self, action_name: &str, context: KeyContext) -> Option<String> {
+    pub fn find_keybinding_for_action(
+        &self,
+        action_name: &str,
+        context: KeyContext,
+    ) -> Option<String> {
         // Parse the action from the action name
         let target_action = Action::from_str(action_name, &HashMap::new())?;
 
@@ -836,9 +840,7 @@ impl KeybindingResolver {
             for ((key_code, modifiers), action) in map {
                 // Check if this is an Alt+letter binding for MenuOpen with matching name
                 if let Action::MenuOpen(name) = action {
-                    if name.eq_ignore_ascii_case(menu_name)
-                        && *modifiers == KeyModifiers::ALT
-                    {
+                    if name.eq_ignore_ascii_case(menu_name) && *modifiers == KeyModifiers::ALT {
                         // Return the character for Alt+letter bindings
                         if let KeyCode::Char(c) = key_code {
                             return Some(c.to_ascii_lowercase());
@@ -1157,7 +1159,10 @@ impl KeybindingResolver {
         bindings.insert((KeyCode::F(3), KeyModifiers::SHIFT), Action::FindPrevious);
 
         // Error/diagnostic navigation
-        bindings.insert((KeyCode::F(8), KeyModifiers::empty()), Action::JumpToNextError);
+        bindings.insert(
+            (KeyCode::F(8), KeyModifiers::empty()),
+            Action::JumpToNextError,
+        );
         bindings.insert(
             (KeyCode::F(8), KeyModifiers::SHIFT),
             Action::JumpToPreviousError,
@@ -1168,16 +1173,16 @@ impl KeybindingResolver {
             (KeyCode::Char('/'), KeyModifiers::CONTROL),
             Action::ToggleComment,
         );
-        bindings.insert(
-            (KeyCode::Tab, KeyModifiers::SHIFT),
-            Action::DedentSelection,
-        );
+        bindings.insert((KeyCode::Tab, KeyModifiers::SHIFT), Action::DedentSelection);
         bindings.insert(
             (KeyCode::Char(']'), KeyModifiers::CONTROL),
             Action::GoToMatchingBracket,
         );
         // Ctrl+G for Go to line
-        bindings.insert((KeyCode::Char('g'), KeyModifiers::CONTROL), Action::GotoLine);
+        bindings.insert(
+            (KeyCode::Char('g'), KeyModifiers::CONTROL),
+            Action::GotoLine,
+        );
 
         // Macros (F5 to stop recording, F12 to play last, Alt+Shift+number to toggle record, Ctrl+Alt+number to play)
         bindings.insert(
@@ -1191,17 +1196,11 @@ impl KeybindingResolver {
         // Common macro registers: 0-9
         for i in '0'..='9' {
             bindings.insert(
-                (
-                    KeyCode::Char(i),
-                    KeyModifiers::ALT | KeyModifiers::SHIFT,
-                ),
+                (KeyCode::Char(i), KeyModifiers::ALT | KeyModifiers::SHIFT),
                 Action::ToggleMacroRecording(i),
             );
             bindings.insert(
-                (
-                    KeyCode::Char(i),
-                    KeyModifiers::CONTROL | KeyModifiers::ALT,
-                ),
+                (KeyCode::Char(i), KeyModifiers::CONTROL | KeyModifiers::ALT),
                 Action::PlayMacro(i),
             );
         }
@@ -1210,7 +1209,10 @@ impl KeybindingResolver {
         // Common bookmark slots: 0-9
         for i in '0'..='9' {
             bindings.insert(
-                (KeyCode::Char(i), KeyModifiers::CONTROL | KeyModifiers::SHIFT),
+                (
+                    KeyCode::Char(i),
+                    KeyModifiers::CONTROL | KeyModifiers::SHIFT,
+                ),
                 Action::SetBookmark(i),
             );
             bindings.insert(
@@ -1228,7 +1230,10 @@ impl KeybindingResolver {
 
         // Tab scrolling
         bindings.insert((KeyCode::PageUp, KeyModifiers::ALT), Action::ScrollTabsLeft);
-        bindings.insert((KeyCode::PageDown, KeyModifiers::ALT), Action::ScrollTabsRight);
+        bindings.insert(
+            (KeyCode::PageDown, KeyModifiers::ALT),
+            Action::ScrollTabsRight,
+        );
 
         // Position history navigation (Alt+Left/Right - like VS Code)
         bindings.insert((KeyCode::Left, KeyModifiers::ALT), Action::NavigateBack);
@@ -1242,10 +1247,7 @@ impl KeybindingResolver {
 
         // LSP operations (F2 for rename, Shift+F12 for references, like VS Code)
         bindings.insert((KeyCode::F(2), KeyModifiers::empty()), Action::LspRename);
-        bindings.insert(
-            (KeyCode::F(12), KeyModifiers::SHIFT),
-            Action::LspReferences,
-        );
+        bindings.insert((KeyCode::F(12), KeyModifiers::SHIFT), Action::LspReferences);
 
         all_bindings.insert(KeyContext::Normal, bindings);
 
@@ -1386,7 +1388,10 @@ impl KeybindingResolver {
             (KeyCode::Char('f'), KeyModifiers::CONTROL),
             Action::PromptConfirm,
         );
-        prompt_bindings.insert((KeyCode::F(3), KeyModifiers::empty()), Action::PromptConfirm);
+        prompt_bindings.insert(
+            (KeyCode::F(3), KeyModifiers::empty()),
+            Action::PromptConfirm,
+        );
         all_bindings.insert(KeyContext::Prompt, prompt_bindings);
 
         // Popup context bindings
@@ -1589,7 +1594,9 @@ impl KeybindingResolver {
             Action::GoToMatchingBracket => "Go to matching bracket".to_string(),
             Action::JumpToNextError => "Jump to next error/diagnostic".to_string(),
             Action::JumpToPreviousError => "Jump to previous error/diagnostic".to_string(),
-            Action::SmartHome => "Smart home (toggle line start / first non-whitespace)".to_string(),
+            Action::SmartHome => {
+                "Smart home (toggle line start / first non-whitespace)".to_string()
+            }
             Action::IndentSelection => "Indent selection".to_string(),
             Action::DedentSelection => "Dedent selection".to_string(),
             Action::ToggleComment => "Toggle comment".to_string(),

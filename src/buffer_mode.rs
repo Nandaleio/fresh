@@ -167,10 +167,7 @@ impl ModeRegistry {
     ///
     /// Returns bindings from most specific (this mode) to least specific (root parent).
     /// Later bindings override earlier ones.
-    pub fn get_all_keybindings(
-        &self,
-        mode_name: &str,
-    ) -> HashMap<(KeyCode, KeyModifiers), String> {
+    pub fn get_all_keybindings(&self, mode_name: &str) -> HashMap<(KeyCode, KeyModifiers), String> {
         let mut result = HashMap::new();
         let mut chain = Vec::new();
 
@@ -247,21 +244,13 @@ mod tests {
 
         // Should find inherited binding from special mode
         assert_eq!(
-            registry.resolve_keybinding(
-                "diagnostics-list",
-                KeyCode::Char('q'),
-                KeyModifiers::NONE
-            ),
+            registry.resolve_keybinding("diagnostics-list", KeyCode::Char('q'), KeyModifiers::NONE),
             Some("close-buffer".to_string())
         );
 
         // Should not find non-existent binding
         assert_eq!(
-            registry.resolve_keybinding(
-                "diagnostics-list",
-                KeyCode::Char('x'),
-                KeyModifiers::NONE
-            ),
+            registry.resolve_keybinding("diagnostics-list", KeyCode::Char('x'), KeyModifiers::NONE),
             None
         );
     }

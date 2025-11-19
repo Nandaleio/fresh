@@ -173,8 +173,8 @@ impl LspClientState {
 /// Create common LSP client capabilities with workDoneProgress support
 fn create_client_capabilities() -> ClientCapabilities {
     use lsp_types::{
-        GeneralClientCapabilities, RenameClientCapabilities,
-        TextDocumentClientCapabilities, WorkspaceClientCapabilities, WorkspaceEditClientCapabilities,
+        GeneralClientCapabilities, RenameClientCapabilities, TextDocumentClientCapabilities,
+        WorkspaceClientCapabilities, WorkspaceEditClientCapabilities,
     };
 
     ClientCapabilities {
@@ -416,11 +416,7 @@ impl LspState {
         // Track the mapping if editor_request_id is provided
         if let Some(editor_id) = editor_request_id {
             self.active_requests.insert(editor_id, id);
-            tracing::debug!(
-                "Tracking request: editor_id={}, lsp_id={}",
-                editor_id,
-                id
-            );
+            tracing::debug!("Tracking request: editor_id={}, lsp_id={}", editor_id, id);
         }
 
         let request = JsonRpcRequest {
@@ -447,11 +443,7 @@ impl LspState {
         // Remove tracking after response received
         if let Some(editor_id) = editor_request_id {
             self.active_requests.remove(&editor_id);
-            tracing::debug!(
-                "Completed request: editor_id={}, lsp_id={}",
-                editor_id,
-                id
-            );
+            tracing::debug!("Completed request: editor_id={}, lsp_id={}", editor_id, id);
         }
 
         serde_json::from_value(result).map_err(|e| format!("Failed to deserialize response: {}", e))
@@ -843,7 +835,8 @@ impl LspState {
                     match serde_json::from_value::<lsp_types::Hover>(result) {
                         Ok(hover) => {
                             // Extract text from hover contents
-                            let (contents, is_markdown) = Self::extract_hover_contents(&hover.contents);
+                            let (contents, is_markdown) =
+                                Self::extract_hover_contents(&hover.contents);
                             // Extract the range if provided (tells us which symbol was hovered)
                             let range = hover.range.map(|r| {
                                 (
@@ -909,7 +902,7 @@ impl LspState {
                     .collect::<Vec<_>>()
                     .join("\n\n");
                 (content, true)
-            },
+            }
             HoverContents::Markup(MarkupContent { kind, value }) => {
                 // Check if it's markdown or plaintext
                 let is_markdown = matches!(kind, MarkupKind::Markdown);
@@ -1017,7 +1010,11 @@ impl LspState {
 
         // Send request and get response
         match self
-            .send_request_sequential::<_, Value>("textDocument/signatureHelp", Some(params), pending)
+            .send_request_sequential::<_, Value>(
+                "textDocument/signatureHelp",
+                Some(params),
+                pending,
+            )
             .await
         {
             Ok(result) => {
@@ -1166,11 +1163,7 @@ impl LspState {
 
         // Send request and get response
         match self
-            .send_request_sequential::<_, Value>(
-                "textDocument/diagnostic",
-                Some(params),
-                pending,
-            )
+            .send_request_sequential::<_, Value>("textDocument/diagnostic", Some(params), pending)
             .await
         {
             Ok(result) => {
@@ -1179,10 +1172,9 @@ impl LspState {
                 let uri_string = uri.as_str().to_string();
 
                 // Try to parse as full report first
-                if let Ok(full_report) =
-                    serde_json::from_value::<lsp_types::RelatedFullDocumentDiagnosticReport>(
-                        result.clone(),
-                    )
+                if let Ok(full_report) = serde_json::from_value::<
+                    lsp_types::RelatedFullDocumentDiagnosticReport,
+                >(result.clone())
                 {
                     let diagnostics = full_report.full_document_diagnostic_report.items;
                     let result_id = full_report.full_document_diagnostic_report.result_id;
@@ -1201,10 +1193,9 @@ impl LspState {
                         diagnostics,
                         unchanged: false,
                     });
-                } else if let Ok(unchanged_report) =
-                    serde_json::from_value::<lsp_types::RelatedUnchangedDocumentDiagnosticReport>(
-                        result.clone(),
-                    )
+                } else if let Ok(unchanged_report) = serde_json::from_value::<
+                    lsp_types::RelatedUnchangedDocumentDiagnosticReport,
+                >(result.clone())
                 {
                     let result_id = unchanged_report
                         .unchanged_document_diagnostic_report
@@ -1266,7 +1257,9 @@ impl LspState {
         end_char: u32,
         pending: &Arc<Mutex<HashMap<i64, oneshot::Sender<Result<Value, String>>>>>,
     ) -> Result<(), String> {
-        use lsp_types::{InlayHintParams, Range, Position, TextDocumentIdentifier, WorkDoneProgressParams};
+        use lsp_types::{
+            InlayHintParams, Position, Range, TextDocumentIdentifier, WorkDoneProgressParams,
+        };
 
         tracing::debug!(
             "LSP: inlay hints request for {} ({}:{} - {}:{})",
@@ -1384,7 +1377,6 @@ impl LspState {
     }
 }
 
-
 /// Async LSP task that handles all I/O
 struct LspTask {
     /// Process handle
@@ -1483,11 +1475,7 @@ impl LspTask {
                             }
                         }
                         Err(e) => {
-                            tracing::error!(
-                                "LSP ({}) stderr read error: {}",
-                                language_clone,
-                                e
-                            );
+                            tracing::error!("LSP ({}) stderr read error: {}", language_clone, e);
                             break;
                         }
                     }
@@ -2590,10 +2578,13 @@ async fn handle_message_dispatch(
                     // Return configuration with inlay hints enabled for rust-analyzer
                     // The request contains items asking for configuration sections
                     // We return an array with one config object per requested item
-                    tracing::debug!("Responding to workspace/configuration with inlay hints enabled");
+                    tracing::debug!(
+                        "Responding to workspace/configuration with inlay hints enabled"
+                    );
 
                     // Parse request params to see how many items are requested
-                    let num_items = request.params
+                    let num_items = request
+                        .params
                         .as_ref()
                         .and_then(|p| p.get("items"))
                         .and_then(|items| items.as_array())
@@ -2630,7 +2621,10 @@ async fn handle_message_dispatch(
                 }
                 "client/registerCapability" => {
                     // Server wants to register a capability dynamically - acknowledge
-                    tracing::debug!("Acknowledging client/registerCapability (id={})", request.id);
+                    tracing::debug!(
+                        "Acknowledging client/registerCapability (id={})",
+                        request.id
+                    );
                     JsonRpcResponse {
                         jsonrpc: "2.0".to_string(),
                         id: request.id,
@@ -2864,11 +2858,7 @@ async fn handle_notification_dispatch(
                         .and_then(|v| v.as_bool())
                         .unwrap_or(false);
 
-                    tracing::info!(
-                        "LSP ({}) server status: quiescent={}",
-                        language,
-                        quiescent
-                    );
+                    tracing::info!("LSP ({}) server status: quiescent={}", language, quiescent);
 
                     if quiescent {
                         // Project is fully loaded - notify editor to re-request inlay hints
@@ -3757,4 +3747,3 @@ mod tests {
         let _ = handle.shutdown();
     }
 }
-

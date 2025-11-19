@@ -176,13 +176,17 @@ impl EventBroadcaster {
     /// Check if any event matches pattern
     pub fn has_match(&self, name_pattern: &str, data_pattern: &Value) -> bool {
         let events = self.events.lock().unwrap();
-        events.iter().any(|e| e.matches(name_pattern) && e.data_matches(data_pattern))
+        events
+            .iter()
+            .any(|e| e.matches(name_pattern) && e.data_matches(data_pattern))
     }
 
     /// Take first event matching pattern (removes it and all events before it)
     pub fn take_match(&self, name_pattern: &str, data_pattern: &Value) -> Option<ControlEvent> {
         let mut events = self.events.lock().unwrap();
-        let pos = events.iter().position(|e| e.matches(name_pattern) && e.data_matches(data_pattern));
+        let pos = events
+            .iter()
+            .position(|e| e.matches(name_pattern) && e.data_matches(data_pattern));
 
         if let Some(idx) = pos {
             let event = events.get(idx).cloned();
@@ -236,7 +240,10 @@ mod tests {
 
     #[test]
     fn test_event_matching() {
-        let event = ControlEvent::new("lsp:status_changed", json!({"language": "rust", "status": "running"}));
+        let event = ControlEvent::new(
+            "lsp:status_changed",
+            json!({"language": "rust", "status": "running"}),
+        );
 
         assert!(event.matches("lsp:status_changed"));
         assert!(event.matches("lsp:*"));
@@ -269,8 +276,14 @@ mod tests {
         let bc = EventBroadcaster::new(10);
 
         bc.emit_simple("editor:init");
-        bc.emit_named("lsp:status_changed", json!({"language": "rust", "status": "starting"}));
-        bc.emit_named("lsp:status_changed", json!({"language": "rust", "status": "running"}));
+        bc.emit_named(
+            "lsp:status_changed",
+            json!({"language": "rust", "status": "starting"}),
+        );
+        bc.emit_named(
+            "lsp:status_changed",
+            json!({"language": "rust", "status": "running"}),
+        );
 
         assert_eq!(bc.len(), 3);
 

@@ -2264,7 +2264,9 @@ fn test_enter_at_bottom_scrolls_immediately() {
     let type_marker = |harness: &mut EditorTestHarness, line_num: usize| {
         let marker = format!("LINE_{}:", line_num);
         for c in marker.chars() {
-            harness.send_key(KeyCode::Char(c), KeyModifiers::NONE).unwrap();
+            harness
+                .send_key(KeyCode::Char(c), KeyModifiers::NONE)
+                .unwrap();
         }
     };
 
@@ -2303,6 +2305,9 @@ fn test_enter_at_bottom_scrolls_immediately() {
         );
     }
 
-    println!("✓ Successfully created {} lines with proper scrolling", total_lines);
+    println!(
+        "✓ Successfully created {} lines with proper scrolling",
+        total_lines
+    );
     println!("✓ Cursor always stayed in content area (never moved to status bar)");
 }

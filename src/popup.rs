@@ -110,11 +110,13 @@ pub fn parse_markdown(text: &str, theme: &crate::theme::Theme) -> Vec<StyledLine
                     }
                     Tag::Heading { .. } => {
                         let current = *style_stack.last().unwrap_or(&Style::default());
-                        style_stack.push(current.add_modifier(Modifier::BOLD).fg(theme.help_key_fg));
+                        style_stack
+                            .push(current.add_modifier(Modifier::BOLD).fg(theme.help_key_fg));
                     }
                     Tag::Link { .. } | Tag::Image { .. } => {
                         let current = *style_stack.last().unwrap_or(&Style::default());
-                        style_stack.push(current.add_modifier(Modifier::UNDERLINED).fg(Color::Cyan));
+                        style_stack
+                            .push(current.add_modifier(Modifier::UNDERLINED).fg(Color::Cyan));
                     }
                     Tag::List(_) | Tag::Item => {
                         // Start list items on new line
@@ -133,8 +135,12 @@ pub fn parse_markdown(text: &str, theme: &crate::theme::Theme) -> Vec<StyledLine
             }
             Event::End(tag_end) => {
                 match tag_end {
-                    TagEnd::Strong | TagEnd::Emphasis | TagEnd::Strikethrough
-                    | TagEnd::Heading(_) | TagEnd::Link | TagEnd::Image => {
+                    TagEnd::Strong
+                    | TagEnd::Emphasis
+                    | TagEnd::Strikethrough
+                    | TagEnd::Heading(_)
+                    | TagEnd::Link
+                    | TagEnd::Image => {
                         style_stack.pop();
                     }
                     TagEnd::CodeBlock => {
@@ -309,7 +315,7 @@ impl Popup {
             title: None,
             content: PopupContent::Markdown(styled_lines),
             position: PopupPosition::AtCursor,
-            width: 60,  // Wider for markdown content
+            width: 60,      // Wider for markdown content
             max_height: 20, // Taller for documentation
             bordered: true,
             border_style: Style::default().fg(theme.popup_border_fg),

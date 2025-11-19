@@ -144,7 +144,10 @@ impl LspManager {
         // Clean up old restart attempts outside the window
         let now = Instant::now();
         let window = Duration::from_secs(RESTART_WINDOW_SECS);
-        let attempts = self.restart_attempts.entry(language.to_string()).or_default();
+        let attempts = self
+            .restart_attempts
+            .entry(language.to_string())
+            .or_default();
         attempts.retain(|t| now.duration_since(*t) < window);
 
         // Check if we've exceeded max restarts
@@ -170,7 +173,8 @@ impl LspManager {
         let restart_time = now + Duration::from_millis(delay_ms);
 
         // Schedule the restart
-        self.pending_restarts.insert(language.to_string(), restart_time);
+        self.pending_restarts
+            .insert(language.to_string(), restart_time);
 
         tracing::info!(
             "LSP server for {} crashed (attempt {}/{}), will restart in {}ms",
@@ -276,7 +280,12 @@ impl LspManager {
         let window = Duration::from_secs(RESTART_WINDOW_SECS);
         self.restart_attempts
             .get(language)
-            .map(|attempts| attempts.iter().filter(|t| now.duration_since(**t) < window).count())
+            .map(|attempts| {
+                attempts
+                    .iter()
+                    .filter(|t| now.duration_since(**t) < window)
+                    .count()
+            })
             .unwrap_or(0)
     }
 

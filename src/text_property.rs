@@ -95,10 +95,7 @@ impl TextPropertyManager {
 
     /// Get all properties at a specific byte position
     pub fn get_at(&self, pos: usize) -> Vec<&TextProperty> {
-        self.properties
-            .iter()
-            .filter(|p| p.contains(pos))
-            .collect()
+        self.properties.iter().filter(|p| p.contains(pos)).collect()
     }
 
     /// Get all properties overlapping a range
@@ -250,8 +247,9 @@ mod tests {
 
     #[test]
     fn test_text_property_get_as() {
-        let prop =
-            TextProperty::new(0, 10).with_property("count", json!(42)).with_property(
+        let prop = TextProperty::new(0, 10)
+            .with_property("count", json!(42))
+            .with_property(
                 "location",
                 json!({"file": "test.rs", "line": 42, "column": 5}),
             );

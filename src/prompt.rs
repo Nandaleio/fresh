@@ -102,7 +102,11 @@ impl Prompt {
     }
 
     /// Create a new prompt with initial text
-    pub fn with_initial_text(message: String, prompt_type: PromptType, initial_text: String) -> Self {
+    pub fn with_initial_text(
+        message: String,
+        prompt_type: PromptType,
+        initial_text: String,
+    ) -> Self {
         let cursor_pos = initial_text.len();
         Self {
             message,

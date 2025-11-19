@@ -185,15 +185,10 @@ pub enum PluginCommand {
     },
 
     /// Remove virtual texts whose ID starts with the given prefix
-    RemoveVirtualTextsByPrefix {
-        buffer_id: BufferId,
-        prefix: String,
-    },
+    RemoveVirtualTextsByPrefix { buffer_id: BufferId, prefix: String },
 
     /// Clear all virtual texts from a buffer
-    ClearVirtualTexts {
-        buffer_id: BufferId,
-    },
+    ClearVirtualTexts { buffer_id: BufferId },
 
     /// Refresh lines for a buffer (clear seen_lines cache to re-trigger lines_changed hook)
     RefreshLines { buffer_id: BufferId },
@@ -248,9 +243,7 @@ pub enum PluginCommand {
     },
 
     /// Remove a top-level menu
-    RemoveMenu {
-        menu_label: String,
-    },
+    RemoveMenu { menu_label: String },
 
     /// Create a new virtual buffer (not backed by a file)
     CreateVirtualBuffer {
@@ -309,9 +302,7 @@ pub enum PluginCommand {
     },
 
     /// Get text properties at the cursor position in a buffer
-    GetTextPropertiesAtCursor {
-        buffer_id: BufferId,
-    },
+    GetTextPropertiesAtCursor { buffer_id: BufferId },
 
     /// Define a buffer mode with keybindings
     DefineMode {
@@ -322,9 +313,7 @@ pub enum PluginCommand {
     },
 
     /// Switch the current split to display a buffer
-    ShowBuffer {
-        buffer_id: BufferId,
-    },
+    ShowBuffer { buffer_id: BufferId },
 
     /// Create a virtual buffer in an existing split (replaces current buffer in that split)
     CreateVirtualBufferInExistingSplit {
@@ -349,14 +338,10 @@ pub enum PluginCommand {
     },
 
     /// Close a buffer and remove it from all splits
-    CloseBuffer {
-        buffer_id: BufferId,
-    },
+    CloseBuffer { buffer_id: BufferId },
 
     /// Focus a specific split
-    FocusSplit {
-        split_id: SplitId,
-    },
+    FocusSplit { split_id: SplitId },
 
     /// Set the buffer displayed in a specific split
     SetSplitBuffer {
@@ -365,9 +350,7 @@ pub enum PluginCommand {
     },
 
     /// Close a split (if not the last one)
-    CloseSplit {
-        split_id: SplitId,
-    },
+    CloseSplit { split_id: SplitId },
 }
 
 /// Plugin API context - provides safe access to editor functionality
@@ -551,11 +534,7 @@ impl PluginApi {
     }
 
     /// Remove a menu item from a menu
-    pub fn remove_menu_item(
-        &self,
-        menu_label: String,
-        item_label: String,
-    ) -> Result<(), String> {
+    pub fn remove_menu_item(&self, menu_label: String, item_label: String) -> Result<(), String> {
         self.send_command(PluginCommand::RemoveMenuItem {
             menu_label,
             item_label,

@@ -175,7 +175,11 @@ fn run_script_control_mode(args: &Args) -> io::Result<()> {
     // Create script control mode instance
     let mut control = if let Some(path) = &args.file {
         if path.is_dir() {
-            ScriptControlMode::with_working_dir(args.script_width, args.script_height, path.clone())?
+            ScriptControlMode::with_working_dir(
+                args.script_width,
+                args.script_height,
+                path.clone(),
+            )?
         } else {
             let mut ctrl = ScriptControlMode::new(args.script_width, args.script_height)?;
             // Open the file if provided

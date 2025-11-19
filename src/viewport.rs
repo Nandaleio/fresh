@@ -367,8 +367,7 @@ impl Viewport {
                 let mut iter = buffer.line_iterator(self.top_byte, 80);
                 let mut lines_from_top = 0;
 
-                while iter.current_position() < cursor_line_start
-                    && lines_from_top < viewport_lines
+                while iter.current_position() < cursor_line_start && lines_from_top < viewport_lines
                 {
                     if iter.next().is_none() {
                         break;
@@ -402,7 +401,8 @@ impl Viewport {
                     };
                     let segments = wrap_line(line_text, &wrap_config);
                     let cursor_column = cursor.position.saturating_sub(cursor_line_start);
-                    let (cursor_segment_idx, _) = char_position_to_segment(cursor_column, &segments);
+                    let (cursor_segment_idx, _) =
+                        char_position_to_segment(cursor_column, &segments);
                     visual_rows_counted += cursor_segment_idx + 1;
                 }
 

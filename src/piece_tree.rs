@@ -2018,7 +2018,11 @@ mod tests {
         // Verify initial position works correctly
         // Position 23 = 'v' of second "val" on line 1 (after newline at pos 18)
         let pos = tree.offset_to_position(23, &buffers);
-        assert_eq!(pos, Some((1, 4)), "Initial: position 23 should be line 1, column 4");
+        assert_eq!(
+            pos,
+            Some((1, 4)),
+            "Initial: position 23 should be line 1, column 4"
+        );
 
         // Now simulate LSP rename operations:
         // 1. Delete "val" at position 23 (3 bytes)
@@ -2057,11 +2061,7 @@ mod tests {
 
         // Also test position 21 (start of line 1)
         let pos = tree.offset_to_position(21, &buffers);
-        assert_eq!(
-            pos,
-            Some((1, 0)),
-            "Position 21 should be line 1, column 0"
-        );
+        assert_eq!(pos, Some((1, 0)), "Position 21 should be line 1, column 0");
     }
 }
 

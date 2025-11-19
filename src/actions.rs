@@ -42,7 +42,11 @@ fn pos_2d_to_byte(buffer: &Buffer, pos: Position2D) -> usize {
 }
 
 /// Handle block selection movement
-fn block_select_action(state: &mut EditorState, events: &mut Vec<Event>, direction: BlockDirection) {
+fn block_select_action(
+    state: &mut EditorState,
+    events: &mut Vec<Event>,
+    direction: BlockDirection,
+) {
     // Get line count for bounds checking
     let total_lines = {
         let len = state.buffer.len();
@@ -57,13 +61,12 @@ fn block_select_action(state: &mut EditorState, events: &mut Vec<Event>, directi
         let current_2d = byte_to_2d(&state.buffer, cursor.position);
 
         // If not in block mode, start block selection
-        let block_anchor = if cursor.selection_mode != SelectionMode::Block
-            || cursor.block_anchor.is_none()
-        {
-            current_2d
-        } else {
-            cursor.block_anchor.unwrap()
-        };
+        let block_anchor =
+            if cursor.selection_mode != SelectionMode::Block || cursor.block_anchor.is_none() {
+                current_2d
+            } else {
+                cursor.block_anchor.unwrap()
+            };
 
         // Calculate new 2D position based on direction
         let new_2d = match direction {
@@ -246,7 +249,13 @@ pub fn action_to_events(
                         None
                     };
 
-                    (*cursor_id, insert_position, line_start, only_spaces, char_after)
+                    (
+                        *cursor_id,
+                        insert_position,
+                        line_start,
+                        only_spaces,
+                        char_after,
+                    )
                 })
                 .collect();
 
@@ -1457,8 +1466,7 @@ pub fn action_to_events(
         | Action::PluginAction(_)
         | Action::None
         | Action::ScrollTabsLeft
-        | Action::ScrollTabsRight
-        => return None,
+        | Action::ScrollTabsRight => return None,
 
         // Block/rectangular selection actions
         Action::BlockSelectLeft => {
@@ -2372,11 +2380,7 @@ mod tests {
         println!("Events: {:?}", events);
 
         // Should have Insert event for "()" and MoveCursor to position between them
-        assert_eq!(
-            events.len(),
-            2,
-            "Should have Insert and MoveCursor events"
-        );
+        assert_eq!(events.len(), 2, "Should have Insert and MoveCursor events");
 
         // Apply events
         for event in events {
@@ -2573,8 +2577,7 @@ mod tests {
         assert_eq!(state.cursors.primary().position, 1);
 
         // Delete backward with auto_indent=true - should delete both characters
-        let events =
-            action_to_events(&mut state, Action::DeleteBackward, 4, true, 80).unwrap();
+        let events = action_to_events(&mut state, Action::DeleteBackward, 4, true, 80).unwrap();
 
         for event in events {
             state.apply(&event);
@@ -2608,8 +2611,7 @@ mod tests {
         });
 
         // Delete backward - should delete both
-        let events =
-            action_to_events(&mut state, Action::DeleteBackward, 4, true, 80).unwrap();
+        let events = action_to_events(&mut state, Action::DeleteBackward, 4, true, 80).unwrap();
 
         for event in events {
             state.apply(&event);
@@ -2642,8 +2644,7 @@ mod tests {
         });
 
         // Delete backward - should delete both quotes
-        let events =
-            action_to_events(&mut state, Action::DeleteBackward, 4, true, 80).unwrap();
+        let events = action_to_events(&mut state, Action::DeleteBackward, 4, true, 80).unwrap();
 
         for event in events {
             state.apply(&event);
@@ -2676,8 +2677,7 @@ mod tests {
         });
 
         // Delete backward with auto_indent=false - should only delete opening bracket
-        let events =
-            action_to_events(&mut state, Action::DeleteBackward, 4, false, 80).unwrap();
+        let events = action_to_events(&mut state, Action::DeleteBackward, 4, false, 80).unwrap();
 
         for event in events {
             state.apply(&event);
@@ -2711,8 +2711,7 @@ mod tests {
         });
 
         // Delete backward - should only delete opening bracket since they don't match
-        let events =
-            action_to_events(&mut state, Action::DeleteBackward, 4, true, 80).unwrap();
+        let events = action_to_events(&mut state, Action::DeleteBackward, 4, true, 80).unwrap();
 
         for event in events {
             state.apply(&event);
@@ -2746,8 +2745,7 @@ mod tests {
         });
 
         // Delete backward - should only delete 'a', not both brackets
-        let events =
-            action_to_events(&mut state, Action::DeleteBackward, 4, true, 80).unwrap();
+        let events = action_to_events(&mut state, Action::DeleteBackward, 4, true, 80).unwrap();
 
         for event in events {
             state.apply(&event);

@@ -80,7 +80,9 @@ fn test_new_split_has_buffer_in_tabs() {
         .unwrap();
     harness.render().unwrap();
     harness.type_text("split horiz").unwrap();
-    harness.send_key(KeyCode::Enter, KeyModifiers::NONE).unwrap();
+    harness
+        .send_key(KeyCode::Enter, KeyModifiers::NONE)
+        .unwrap();
     harness.render().unwrap();
 
     // The new split should also have the buffer in its tabs
@@ -116,7 +118,9 @@ fn test_splits_have_independent_tabs() {
         .unwrap();
     harness.render().unwrap();
     harness.type_text("split vert").unwrap();
-    harness.send_key(KeyCode::Enter, KeyModifiers::NONE).unwrap();
+    harness
+        .send_key(KeyCode::Enter, KeyModifiers::NONE)
+        .unwrap();
     harness.render().unwrap();
 
     // Now in second split - open a different file
@@ -133,7 +137,9 @@ fn test_splits_have_independent_tabs() {
         .unwrap();
     harness.render().unwrap();
     harness.type_text("next split").unwrap();
-    harness.send_key(KeyCode::Enter, KeyModifiers::NONE).unwrap();
+    harness
+        .send_key(KeyCode::Enter, KeyModifiers::NONE)
+        .unwrap();
     harness.render().unwrap();
 
     // First split should still have only file1.txt in its tabs
@@ -170,7 +176,9 @@ fn test_buffer_cycling_within_split() {
         .unwrap();
     harness.render().unwrap();
     harness.type_text("next buffer").unwrap();
-    harness.send_key(KeyCode::Enter, KeyModifiers::NONE).unwrap();
+    harness
+        .send_key(KeyCode::Enter, KeyModifiers::NONE)
+        .unwrap();
     harness.render().unwrap();
 
     harness.assert_buffer_content("Content 1");
@@ -181,7 +189,9 @@ fn test_buffer_cycling_within_split() {
         .unwrap();
     harness.render().unwrap();
     harness.type_text("next buffer").unwrap();
-    harness.send_key(KeyCode::Enter, KeyModifiers::NONE).unwrap();
+    harness
+        .send_key(KeyCode::Enter, KeyModifiers::NONE)
+        .unwrap();
     harness.render().unwrap();
 
     harness.assert_buffer_content("Content 2");
@@ -232,7 +242,9 @@ fn test_close_buffer_removes_from_tabs() {
         .unwrap();
     harness.render().unwrap();
     harness.type_text("close buffer").unwrap();
-    harness.send_key(KeyCode::Enter, KeyModifiers::NONE).unwrap();
+    harness
+        .send_key(KeyCode::Enter, KeyModifiers::NONE)
+        .unwrap();
     harness.render().unwrap();
 
     // Only file1 should remain in tabs
@@ -297,7 +309,9 @@ fn test_git_log_split_tabs() {
         .unwrap();
     harness.render().unwrap();
     harness.type_text("git log").unwrap();
-    harness.send_key(KeyCode::Enter, KeyModifiers::NONE).unwrap();
+    harness
+        .send_key(KeyCode::Enter, KeyModifiers::NONE)
+        .unwrap();
 
     // Wait a bit for async operations
     std::thread::sleep(std::time::Duration::from_millis(100));
@@ -343,7 +357,9 @@ fn test_debug_split_tabs_rendering() {
         .unwrap();
     harness.render().unwrap();
     harness.type_text("split vert").unwrap();
-    harness.send_key(KeyCode::Enter, KeyModifiers::NONE).unwrap();
+    harness
+        .send_key(KeyCode::Enter, KeyModifiers::NONE)
+        .unwrap();
     harness.render().unwrap();
 
     eprintln!("\n=== After vertical split ===");

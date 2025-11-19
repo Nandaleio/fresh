@@ -103,9 +103,7 @@ fn test_escape_closes_menu() {
     harness.assert_screen_contains("New File");
 
     // Press Escape to close
-    harness
-        .send_key(KeyCode::Esc, KeyModifiers::NONE)
-        .unwrap();
+    harness.send_key(KeyCode::Esc, KeyModifiers::NONE).unwrap();
     harness.render().unwrap();
 
     // Menu should be closed
@@ -136,9 +134,7 @@ fn test_menu_left_right_navigation() {
     harness.assert_screen_not_contains("New File");
 
     // Press Left to go back to File menu
-    harness
-        .send_key(KeyCode::Left, KeyModifiers::NONE)
-        .unwrap();
+    harness.send_key(KeyCode::Left, KeyModifiers::NONE).unwrap();
     harness.render().unwrap();
 
     // Should now show File menu items again

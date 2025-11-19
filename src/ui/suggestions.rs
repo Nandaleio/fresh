@@ -225,6 +225,11 @@ impl SuggestionsRenderer {
         frame.render_widget(paragraph, area);
 
         // Return area info for mouse hit testing
-        Some((inner_area, start_idx, visible_count, prompt.suggestions.len()))
+        Some((
+            inner_area,
+            start_idx,
+            visible_count,
+            prompt.suggestions.len(),
+        ))
     }
 }

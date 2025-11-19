@@ -275,7 +275,10 @@ impl SemanticHighlighter {
             Ok(query) => {
                 self.parser = Some(parser);
                 self.identifier_query = Some(query);
-                tracing::debug!("Tree-sitter semantic highlighting enabled for {:?}", language);
+                tracing::debug!(
+                    "Tree-sitter semantic highlighting enabled for {:?}",
+                    language
+                );
             }
             Err(e) => {
                 tracing::debug!(
@@ -324,12 +327,22 @@ impl SemanticHighlighter {
 
         // Try locals-based highlighting first (scope-aware)
         if self.has_locals() {
-            return self.highlight_with_locals(buffer, cursor_position, viewport_start, viewport_end);
+            return self.highlight_with_locals(
+                buffer,
+                cursor_position,
+                viewport_start,
+                viewport_end,
+            );
         }
 
         // Try tree-sitter identifier matching
         if self.has_tree_sitter() {
-            return self.highlight_with_tree_sitter(buffer, cursor_position, viewport_start, viewport_end);
+            return self.highlight_with_tree_sitter(
+                buffer,
+                cursor_position,
+                viewport_start,
+                viewport_end,
+            );
         }
 
         // Fallback to text-matching mode
@@ -517,9 +530,9 @@ impl SemanticHighlighter {
                         def_name == name
                             && *def_scope != scope_id
                             && def_range.start < range.start
-                            && scopes.get(*def_scope).map_or(false, |s| {
-                                range.start >= s.start && range.end <= s.end
-                            })
+                            && scopes
+                                .get(*def_scope)
+                                .map_or(false, |s| range.start >= s.start && range.end <= s.end)
                     });
 
                     if !is_shadowed {
@@ -534,9 +547,7 @@ impl SemanticHighlighter {
             // No definition found - fall back to matching all references with same name
             // This handles global/external identifiers
             for (range, name) in &references {
-                if name == &target_name
-                    && range.start < viewport_end
-                    && range.end > viewport_start
+                if name == &target_name && range.start < viewport_end && range.end > viewport_start
                 {
                     highlights.push(HighlightSpan {
                         range: range.clone(),
@@ -576,7 +587,12 @@ impl SemanticHighlighter {
             Some(t) => t,
             None => {
                 tracing::debug!("Tree-sitter parsing failed, falling back to text matching");
-                return self.highlight_with_text_matching(buffer, cursor_position, viewport_start, viewport_end);
+                return self.highlight_with_text_matching(
+                    buffer,
+                    cursor_position,
+                    viewport_start,
+                    viewport_end,
+                );
             }
         };
 
@@ -664,7 +680,8 @@ impl SemanticHighlighter {
         }
 
         // Find all occurrences in the viewport
-        let occurrences = self.find_occurrences_in_range(buffer, &word, viewport_start, viewport_end);
+        let occurrences =
+            self.find_occurrences_in_range(buffer, &word, viewport_start, viewport_end);
 
         // Convert to highlight spans
         occurrences
@@ -689,11 +706,17 @@ impl SemanticHighlighter {
         // Need to handle cursor at end of buffer
         let is_on_word = if position < buf_len {
             let byte_at_pos = buffer.slice_bytes(position..position + 1);
-            byte_at_pos.first().map(|&b| is_word_char(b)).unwrap_or(false)
+            byte_at_pos
+                .first()
+                .map(|&b| is_word_char(b))
+                .unwrap_or(false)
         } else if position > 0 {
             // Cursor at end of buffer - check previous character
             let byte_before = buffer.slice_bytes(position - 1..position);
-            byte_before.first().map(|&b| is_word_char(b)).unwrap_or(false)
+            byte_before
+                .first()
+                .map(|&b| is_word_char(b))
+                .unwrap_or(false)
         } else {
             false
         };
@@ -703,7 +726,10 @@ impl SemanticHighlighter {
             // or the character before was a word char but current is not
             // This handles cursor positioned right after a word (e.g., at end of "foo|")
             let byte_before = buffer.slice_bytes(position.saturating_sub(1)..position);
-            let is_after_word = byte_before.first().map(|&b| is_word_char(b)).unwrap_or(false);
+            let is_after_word = byte_before
+                .first()
+                .map(|&b| is_word_char(b))
+                .unwrap_or(false);
 
             // Only use "word before cursor" if we're at end of buffer
             // Otherwise, cursor on whitespace/punctuation should not highlight
@@ -979,7 +1005,11 @@ fn second() {
 
         // Should find occurrences - exact count depends on scope resolution
         // At minimum, should find the definition and at least one reference
-        assert!(spans.len() >= 2, "Expected at least 2 spans, got {}", spans.len());
+        assert!(
+            spans.len() >= 2,
+            "Expected at least 2 spans, got {}",
+            spans.len()
+        );
     }
 
     #[test]
@@ -1008,7 +1038,11 @@ fn main() {
 
         // Should find occurrences - with proper shadowing this would be 2,
         // but current implementation may find more
-        assert!(spans.len() >= 2, "Expected at least 2 spans, got {}", spans.len());
+        assert!(
+            spans.len() >= 2,
+            "Expected at least 2 spans, got {}",
+            spans.len()
+        );
     }
 
     #[test]
@@ -1032,6 +1066,10 @@ fn greet(name: &str) {
         let spans = highlighter.highlight_occurrences(&buffer, name_pos, 0, buffer.len());
 
         // Should find at least 3 occurrences: parameter + 2 uses
-        assert!(spans.len() >= 3, "Expected at least 3 spans, got {}", spans.len());
+        assert!(
+            spans.len() >= 3,
+            "Expected at least 3 spans, got {}",
+            spans.len()
+        );
     }
 }

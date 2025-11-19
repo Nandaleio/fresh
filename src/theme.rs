@@ -713,7 +713,14 @@ impl Theme {
 
     /// Get all available theme names
     pub fn available_themes() -> Vec<&'static str> {
-        vec!["dark", "light", "high-contrast", "nord", "dracula", "solarized-dark"]
+        vec![
+            "dark",
+            "light",
+            "high-contrast",
+            "nord",
+            "dracula",
+            "solarized-dark",
+        ]
     }
 }
 

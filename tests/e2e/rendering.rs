@@ -114,9 +114,18 @@ fn test_cursor_x_position_advances() {
     // Y position should stay constant (at content_first_row)
     let expected_y = content_first_row as u16;
     assert_eq!(pos0.1, expected_y, "Initial Y should be {expected_y}");
-    assert_eq!(pos1.1, expected_y, "Y should stay at {expected_y} after 'a'");
-    assert_eq!(pos2.1, expected_y, "Y should stay at {expected_y} after 'ab'");
-    assert_eq!(pos3.1, expected_y, "Y should stay at {expected_y} after 'abc'");
+    assert_eq!(
+        pos1.1, expected_y,
+        "Y should stay at {expected_y} after 'a'"
+    );
+    assert_eq!(
+        pos2.1, expected_y,
+        "Y should stay at {expected_y} after 'ab'"
+    );
+    assert_eq!(
+        pos3.1, expected_y,
+        "Y should stay at {expected_y} after 'abc'"
+    );
 
     // X position should advance by 1 each time
     assert_eq!(pos1.0, pos0.0 + 1, "X should advance by 1 after 'a'");

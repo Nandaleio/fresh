@@ -11,7 +11,9 @@
 //! - Main loop remains responsive and simple
 
 use crate::file_tree::{FileTreeView, NodeId};
-use lsp_types::{CodeActionOrCommand, CompletionItem, Diagnostic, InlayHint, Location, SignatureHelp};
+use lsp_types::{
+    CodeActionOrCommand, CompletionItem, Diagnostic, InlayHint, Location, SignatureHelp,
+};
 use std::sync::mpsc;
 
 /// Messages sent from async tasks to the synchronous main loop
@@ -99,9 +101,7 @@ pub enum AsyncMessage {
 
     /// LSP server status became quiescent (project fully loaded)
     /// This is a rust-analyzer specific notification (experimental/serverStatus)
-    LspServerQuiescent {
-        language: String,
-    },
+    LspServerQuiescent { language: String },
 
     /// File changed externally (future: file watching)
     FileChanged { path: String },
