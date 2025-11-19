@@ -1,3 +1,4 @@
+mod file_explorer;
 mod input;
 mod render;
 mod types;
