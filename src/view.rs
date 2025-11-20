@@ -5,6 +5,7 @@
 //! source offsets for hit-testing and cursor positioning.
 
 use crate::overlay::OverlayFace;
+use crate::state::EditorState;
 use crate::virtual_text::VirtualTextPosition;
 use ratatui::style::Style;
 
@@ -58,4 +59,53 @@ impl ViewStream {
         self.source_map.push(token.source_offset);
         self.tokens.push(token);
     }
+}
+
+/// Build a base view stream for a viewport range (byte offsets)
+/// This stream contains plain text and newline tokens only; overlays and virtual
+/// text are not included here (they remain applied during rendering).
+pub fn build_base_stream(
+    state: &mut EditorState,
+    start: usize,
+    end: usize,
+) -> ViewStream {
+    let mut stream = ViewStream::new();
+
+    if start >= end {
+        return stream;
+    }
+
+    let text = state.get_text_range(start, end);
+
+    let mut current_offset = start;
+    let mut buffer = String::new();
+
+    for ch in text.chars() {
+        if ch == '\n' {
+            if !buffer.is_empty() {
+                stream.push(ViewToken {
+                    source_offset: Some(current_offset - buffer.len()),
+                    kind: ViewTokenKind::Text(buffer.clone()),
+                });
+                buffer.clear();
+            }
+            stream.push(ViewToken {
+                source_offset: Some(current_offset),
+                kind: ViewTokenKind::Newline,
+            });
+            current_offset += 1;
+        } else {
+            buffer.push(ch);
+            current_offset += ch.len_utf8();
+        }
+    }
+
+    if !buffer.is_empty() {
+        stream.push(ViewToken {
+            source_offset: Some(current_offset - buffer.len()),
+            kind: ViewTokenKind::Text(buffer),
+        });
+    }
+
+    stream
 }
