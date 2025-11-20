@@ -42,7 +42,9 @@
 use crate::commands::Suggestion;
 use crate::event::BufferId;
 use crate::event::SplitId;
-use crate::plugin_api::{EditorStateSnapshot, LayoutHints, PluginCommand};
+use crate::plugin_api::{
+    EditorStateSnapshot, LayoutHints, PluginCommand, ViewTokenWire,
+};
 use anyhow::{anyhow, Result};
 use deno_core::{
     extension, op2, FastString, JsRuntime, ModuleLoadResponse, ModuleSource, ModuleSourceCode,
@@ -560,8 +562,7 @@ fn op_fresh_submit_view_transform(
     split_id: Option<u32>,
     start: u32,
     end: u32,
-    #[serde] tokens: Vec<serde_json::Value>,
-    #[serde] source_map: Vec<Option<u32>>,
+    #[serde] tokens: Vec<ViewTokenWire>,
     #[serde] layout_hints: Option<LayoutHints>,
 ) -> bool {
     if let Some(runtime_state) = state.try_borrow::<Rc<RefCell<TsRuntimeState>>>() {
@@ -586,10 +587,6 @@ fn op_fresh_submit_view_transform(
             payload: crate::plugin_api::ViewTransformPayload {
                 range: start as usize..end as usize,
                 tokens,
-                source_map: source_map
-                    .into_iter()
-                    .map(|o| o.map(|v| v as usize))
-                    .collect(),
                 layout_hints: Some(hints),
             },
         });

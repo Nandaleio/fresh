@@ -537,7 +537,7 @@ deleteRange(buffer_id: number, start: number, end: number): boolean
 Submit a transformed view stream for a viewport
 
 ```typescript
-submitViewTransform(buffer_id: number, split_id?: number | null, start: number, end: number, tokens: unknown[], source_map: number | null[], layout_hints?: LayoutHints | null): boolean
+submitViewTransform(buffer_id: number, split_id?: number | null, start: number, end: number, tokens: ViewTokenWire[], layout_hints?: LayoutHints | null): boolean
 ```
 
 **Parameters:**
@@ -545,11 +545,10 @@ submitViewTransform(buffer_id: number, split_id?: number | null, start: number, 
 | Name | Type | Description |
 |------|------|-------------|
 | `buffer_id` | `number` | Buffer to apply the transform to |
-| `split_id` | `number \| null` (optional) | Target split (defaults to active) |
+| `split_id` | `number | null` (optional) | - |
 | `start` | `number` | Viewport start byte |
 | `end` | `number` | Viewport end byte |
-| `tokens` | `unknown[]` | Array of serialized view tokens with source offsets (will accept structured tokens in a future revision) |
-| `source_map` | `number | null[]` | Array of source offsets (null for injected) |
+| `tokens` | `ViewTokenWire[]` | Array of tokens with source offsets |
 | `layout_hints` | `LayoutHints | null` (optional) | Optional layout hints (compose width, column guides) |
 
 #### `insertAtCursor`
@@ -1331,3 +1330,4 @@ setVirtualBufferContent(buffer_id: number, entries: TextPropertyEntry[]): boolea
 |------|------|-------------|
 | `buffer_id` | `number` | ID of the virtual buffer |
 | `entries` | `TextPropertyEntry[]` | Array of text entries with properties |
+

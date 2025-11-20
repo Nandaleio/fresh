@@ -73,15 +73,28 @@ pub struct LayoutHints {
     pub column_guides: Option<Vec<u16>>,
 }
 
+/// Wire-format view token kind (serialized for plugin transforms)
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum ViewTokenWireKind {
+    Text(String),
+    Newline,
+    Space,
+}
+
+/// Wire-format view token with optional source mapping
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ViewTokenWire {
+    pub source_offset: Option<usize>,
+    pub kind: ViewTokenWireKind,
+}
+
 /// Transformed view stream payload (plugin-provided)
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ViewTransformPayload {
     /// Byte range this transform applies to (viewport)
     pub range: Range<usize>,
-    /// Tokens encoded as JSON values (to avoid tight coupling)
-    pub tokens: Vec<serde_json::Value>,
-    /// Mapping from token index to source offset (None for injected)
-    pub source_map: Vec<Option<usize>>,
+    /// Tokens in wire format
+    pub tokens: Vec<ViewTokenWire>,
     /// Layout hints
     pub layout_hints: Option<LayoutHints>,
 }
