@@ -126,9 +126,7 @@ pub fn flatten_tokens(tokens: &[crate::plugin_api::ViewTokenWire]) -> (String, V
                     let ch_len = ch.len_utf8();
                     view_text.push(ch);
                     let source = base.map(|s| s + byte_idx);
-                    for offset in 0..ch_len {
-                        mapping.push(source.map(|s| s + offset));
-                    }
+                    mapping.push(source);
                     byte_idx += ch_len;
                 }
             }

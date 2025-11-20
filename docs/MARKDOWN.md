@@ -1,60 +1,58 @@
-# Markdown Semi-WYSIWYG (View-Pipeline Design)
+# Markdown Semi-WYSIWYG (Unified View Pipeline)
 
-Goal: keep Markdown source intact and visible, render a semi-WYSIWYG view (styles, flow, structure) without mutating the buffer, and let plugins drive presentation via a structured, incremental pipeline.
+Goal: keep Markdown source intact and visible, render a semi-WYSIWYG view (styles, flow, structure) without mutating the buffer, and let plugins drive presentation through a single, unified view pipeline. Prefer simplicity and determinism over heuristics.
 
-## Pipeline Overview
-- **Source buffer**: authoritative text; immutable during rendering.
-- **View stream** (core): token/spans over the buffer with offsets/markers (text, newline, overlay spans, virtual text anchors).
-- **Transform stages** (plugin-capable): plugins can rewrite the view stream for presentation (e.g., turn soft newlines into spaces), inject styles, or add virtual text, but must return source↔view mappings.
-- **Layout** (core): consumes the transformed stream plus layout hints (wrap width, centering/margins, table column guides) to produce display lines/segments.
-- **Render** (core): draws display segments; no plugin hooks here.
+## Principles
+- Source is the only truth; control characters (fences, bullets, brackets, backslashes, spaces) remain editable and visible.
+- Rendering is derived, never stored; the pipeline can always fall back to the identity view (source → view unchanged).
+- Wrapping and line flow belong to the view pipeline, not the renderer; built-in “wrap while drawing” is disabled for Markdown compose mode.
+- Every step is pluggable: a plugin may rewrite the representation at each pass, including removing or inserting break markers.
+- Multi-view is first class: the same buffer can be shown in multiple splits/tabs with different transforms/layout hints.
 
-## Hook Points & APIs
-1) **Pre-transform hooks (existing)**: plugins may add overlays/virtual text/markers using current APIs.
-2) **View transform hook (new)**:
-   - Input: viewport slice of the base view stream (tokens with source offsets/marker anchors).
-   - Output: transformed stream + mapping table from view positions back to source offsets (for hit-testing/cursors/selections).
-   - Allowed ops: replace/suppress tokens (e.g., newline→space), inject style spans, insert virtual text tokens. Buffer remains untouched.
-   - Requirements: deterministic (idempotent per input), incremental (viewport or invalidated range only), bounded time.
-   - Failure path: core can fall back to previous transform or base stream.
-3) **Layout hints API (core)**:
-   - Max/compose width (per buffer/split), centering + side margins tint.
-   - Soft-break hint alternative: not needed if plugin rewrites newlines in the view stream; for fallback, accept optional soft-break ranges.
-   - Table column guides: optional column offsets to align cells.
-   - Exposed to plugins via TS ops; core applies during layout.
+## Pipeline (per viewport)
+1) **Source ingest** (core): take a viewport slice anchored at `top_byte`. Build a base view stream of tokens: `Text`, `Newline`, `Space` (for tabs, if expanded), plus resolved overlays/virtual text anchors. Each token carries the originating source byte offset (or `None` for injected content).
+2) **Transform stages** (plugins and/or core):
+   - Input: the current view stream + mapping (view index → source offset) + layout hints.
+   - Output: a rewritten stream + updated mapping. Plugins may completely replace the stream (e.g., drop/merge newline tokens to model soft breaks) or add styling/link/color spans.
+   - Multiple passes are allowed; core treats “no plugin” as the identity transform.
+3) **Layout** (core):
+   - Apply wrapping as a transform: insert break tokens based on `compose_width`/`max_width`.
+   - Center the composed column when the terminal is wider; tint side margins. `max_width` renders as margins when there is extra space.
+   - Produce display lines and maintain mapping for hit-testing/cursors.
+4) **Render** (core): draw styled lines. Uses the mapping for cursor placement, selection, and overlays. No conditional branches for “with/without transform”; identity is just another transform.
 
-## View Stream Shape (conceptual)
-- Tokens carry: kind (`Text`, `Newline`, `VirtualText`, `StyleSpanStart/End`, `OverlaySpan`), source offset (byte), optional marker id, and style metadata.
-- Base stream is derived from buffer + overlays/virtual text resolved to the viewport.
-- Transforms operate on this stream and emit a new stream plus a mapping array: for each view token (or character span), the originating source offset (or `None` for injected virtual text).
+## Transform API (new/updated)
+- **submitViewTransform(buffer_id, split_id, payload)**: send transformed tokens + mapping and optional layout hints (compose width, column guides). Per-split state allows different views of the same buffer.
+- **Tokens**: `Text`, `Newline`, `Space`; style/overlay/virtual-text markers attach out of band (existing overlay/virtual text APIs). Mapping is per character to the originating source byte, or `None` for generated view-only characters.
+- **Rewrites allowed**: newline→space (soft break), space→newline, removal/duplication of tokens, style/color/link hints, table column guides. Plugins can always affect newline rendering without user prompts.
+- **Identity fallback**: if no plugin responds, core synthesizes the identity stream from the source slice and its overlays.
 
-## Layout Changes (core)
-- Accept a transformed stream and mappings.
-- Perform wrapping using compose/max width; center the text column with side margins if the terminal is wider.
-- When encountering transformed “newline→space” tokens, they wrap like spaces; true newlines still break unless transformed away.
-- Cursor/hit-testing uses the mapping to resolve view positions back to source offsets.
-- Render status chip shows mode; margins are tinted if centering is active.
+## Markdown-specific behavior
+- **Soft breaks**: inside paragraphs/lists/quotes, plugin rewrites buffer newlines to spaces (or otherwise) in the view stream; mapping keeps cursors/selections consistent. Hard breaks (two spaces+newline, backslash+newline, `<br>`) remain as explicit newlines unless the plugin chooses otherwise.
+- **Flow & width**: text flow uses `compose_width`/`max_width` and centers the column; built-in renderer wrapping is off for compose mode because wrapping is injected by the pipeline.
+- **Navigation**: in compose mode, up/down operate on visual lines (post-transform); source mode keeps logical-line navigation.
+- **Structure rendering**: headers, lists/bullets/checkboxes, block quotes, tables (with column guides), inline code, fenced code blocks, links/autolinks, emphasis/strong/strike, colors. Code blocks keep source fences visible; future work: underline styles.
+- **Control characters**: fences, bullets, brackets, backslashes, and spaces are the Markdown source; they remain editable and visible while affecting rendering.
+- **Line numbers**: source mode keeps them; compose mode may hide them (plugin-configurable) to reinforce the document view.
 
-## Mode & Features
-- Modes: `Source` (no transforms) and `Compose` (transforms active). Stored per buffer/split; status bar shows mode.
-- Styles: bold/italic/strong, link color, inline code bg, header tint/weight, block quote tint, strikethrough, task list checkboxes, autolinks.
-- Code blocks: shaded bg + monospace; fences dimmed but visible.
-- Flow: compose width with centering/margins; visual-line navigation in Compose; Source keeps logical-line nav.
-- Structure: headers tinted; lists/checkboxes aligned; block quotes gutter; tables with header shading/column alignment.
-- Line breaks: plugin transforms soft breaks by rewriting `\n` tokens to spaces in the view stream (and updating the mapping). Hard breaks stay when user authored (two spaces, backslash+newline, `<br>`) or when outside transform rules. Buffer newlines are untouched.
+## Core vs Plugin Responsibilities
+- **Core**
+  - Build base view stream from source + overlays/virtual text (viewport-scoped).
+  - Maintain per-split view state (mode, compose width, layout hints, submitted transforms).
+  - Apply wrapping/centering as a transform; render with margins tinted; mapping-aware cursor/selection/hit-testing.
+  - Expose ops: toggle compose mode, set compose width/max width, submit view transform, set layout hints. Disable renderer line-wrap logic when compose mode is active.
+- **Plugin (`markdown_compose`)**
+  - Parse Markdown incrementally for the visible slice; rewrite newlines to soft breaks where appropriate; leave hard breaks intact.
+  - Emit style/link/color spans, table column guides, list indentation fixes, and code-block styling cues.
+  - Decide whether to hide line numbers in compose mode; manage compose width preference per buffer/split.
+  - Provide commands: toggle compose, set compose width/max width, refresh transform.
 
-## Core vs. Plugin Responsibilities
-- **Core**: pipeline orchestration; view stream construction; layout (wrap, center, margins, column guides); render; per-buffer mode flag; compose width setting; status chip; mapping-aware cursor/hit-testing; TS ops to set layout hints and submit transformed streams.
-- **Plugin (`markdown_compose`)**: parse Markdown incrementally; produce transforms (newline→space inside paragraphs, apply style spans, inject table guides, list bullet fixes); manage compose width preference; bind visual-line navigation in Compose; expose commands (toggle mode, set compose width, reflow on request if desired).
+## Multi-view Support
+- Each split/tab stores its own view transform + layout hints. The same buffer can be rendered differently in each split; submitting a transform includes `split_id`, so plugins can tailor the view per pane without altering buffer state.
 
-## Implementation Steps
-1) Core state: add view mode, compose width, and centering/margin flags to per-split/buffer state; show mode in status bar.
-2) View stream builder: create a base token stream per viewport (text/newlines + overlay/virtual text spans with source offsets/markers).
-3) TS ops: allow plugin to submit transformed stream+mapping for a viewport; optionally set layout hints (max width, center, column guides).
-4) Layout: consume transformed stream, wrap to compose width, center if wider terminal, render margins tint; use mapping for cursor/hit testing.
-5) Plugin: implement transform hook (incremental), Markdown parsing, soft-break rewrite rules, style spans, table guides, list alignment, code block styling. Ensure mappings preserve source offsets.
-
-## Notes
-- Performance: keep transforms viewport-scoped; reuse previous stream on failure; avoid full-buffer rescans.
-- Ordering: single transform hook per buffer per frame; if multiple plugins are needed, define an ordered list and merge mappings deterministically.
-- Safety: buffer never changes during rendering; all mutations are opt-in commands (e.g., explicit reflow).***
+## Implementation Plan
+1) **Pipeline plumbing**: keep the unified view path in the renderer (always render from a view stream + mapping; identity is synthesized when no transform is available). Remove renderer-side wrapping logic for compose mode; wrapping is injected as a transform.
+2) **State & ops**: per-split compose mode, compose/max width, optional line-number hiding; ops for toggle/set width/submitViewTransform with `split_id`.
+3) **Renderer**: consume the transformed stream, center with margins, mapping-aware cursor/selection/overlays; support per-split transforms.
+4) **Plugin**: incrementally parse Markdown; apply soft-break rules, styling, tables/lists/headers/links/code blocks; emit transforms and layout hints; bind visual-line navigation in compose mode.
+5) **Validation**: ensure newlines can be rewritten to whitespace via transform; verify multi-split rendering shows different views of the same buffer; keep fallbacks working (identity view) when the plugin is absent.***
