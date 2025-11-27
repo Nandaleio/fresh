@@ -233,7 +233,11 @@ fn run_event_loop(
             } else {
                 Duration::from_millis(50)
             };
-            if event_poll(timeout)? { Some(event_read()?) } else { None }
+            if event_poll(timeout)? {
+                Some(event_read()?)
+            } else {
+                None
+            }
         };
 
         let Some(event) = event else { continue };
@@ -302,7 +306,9 @@ fn handle_mouse_event(editor: &mut Editor, mouse_event: MouseEvent) -> io::Resul
 
 /// Skip stale mouse move events, return the latest one.
 /// If we read a non-move event while draining, return it as pending.
-fn coalesce_mouse_moves(event: CrosstermEvent) -> io::Result<(CrosstermEvent, Option<CrosstermEvent>)> {
+fn coalesce_mouse_moves(
+    event: CrosstermEvent,
+) -> io::Result<(CrosstermEvent, Option<CrosstermEvent>)> {
     use crossterm::event::MouseEventKind;
 
     // Only coalesce mouse moves

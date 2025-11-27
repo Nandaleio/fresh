@@ -533,8 +533,7 @@ pub fn hook_args_to_json(args: &HookArgs) -> Result<String> {
         }
     };
 
-    serde_json::to_string(&json_value)
-        .map_err(|e| anyhow!("Failed to serialize hook args: {}", e))
+    serde_json::to_string(&json_value).map_err(|e| anyhow!("Failed to serialize hook args: {}", e))
 }
 
 #[cfg(test)]

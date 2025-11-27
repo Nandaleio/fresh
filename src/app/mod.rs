@@ -3616,7 +3616,11 @@ impl Editor {
     fn handle_plugin_command(&mut self, command: PluginCommand) -> io::Result<()> {
         match command {
             // ==================== Text Editing Commands ====================
-            PluginCommand::InsertText { buffer_id, position, text } => {
+            PluginCommand::InsertText {
+                buffer_id,
+                position,
+                text,
+            } => {
                 self.handle_insert_text(buffer_id, position, text);
             }
             PluginCommand::DeleteRange { buffer_id, range } => {
@@ -3630,8 +3634,18 @@ impl Editor {
             }
 
             // ==================== Overlay Commands ====================
-            PluginCommand::AddOverlay { buffer_id, namespace, range, color, underline, bold, italic } => {
-                self.handle_add_overlay(buffer_id, namespace, range, color, underline, bold, italic);
+            PluginCommand::AddOverlay {
+                buffer_id,
+                namespace,
+                range,
+                color,
+                underline,
+                bold,
+                italic,
+            } => {
+                self.handle_add_overlay(
+                    buffer_id, namespace, range, color, underline, bold, italic,
+                );
             }
             PluginCommand::RemoveOverlay { buffer_id, handle } => {
                 self.handle_remove_overlay(buffer_id, handle);
@@ -3639,18 +3653,42 @@ impl Editor {
             PluginCommand::ClearAllOverlays { buffer_id } => {
                 self.handle_clear_all_overlays(buffer_id);
             }
-            PluginCommand::ClearNamespace { buffer_id, namespace } => {
+            PluginCommand::ClearNamespace {
+                buffer_id,
+                namespace,
+            } => {
                 self.handle_clear_namespace(buffer_id, namespace);
             }
-            PluginCommand::ClearOverlaysInRange { buffer_id, start, end } => {
+            PluginCommand::ClearOverlaysInRange {
+                buffer_id,
+                start,
+                end,
+            } => {
                 self.handle_clear_overlays_in_range(buffer_id, start, end);
             }
 
             // ==================== Virtual Text Commands ====================
-            PluginCommand::AddVirtualText { buffer_id, virtual_text_id, position, text, color, before } => {
-                self.handle_add_virtual_text(buffer_id, virtual_text_id, position, text, color, before);
+            PluginCommand::AddVirtualText {
+                buffer_id,
+                virtual_text_id,
+                position,
+                text,
+                color,
+                before,
+            } => {
+                self.handle_add_virtual_text(
+                    buffer_id,
+                    virtual_text_id,
+                    position,
+                    text,
+                    color,
+                    before,
+                );
             }
-            PluginCommand::RemoveVirtualText { buffer_id, virtual_text_id } => {
+            PluginCommand::RemoveVirtualText {
+                buffer_id,
+                virtual_text_id,
+            } => {
                 self.handle_remove_virtual_text(buffer_id, virtual_text_id);
             }
             PluginCommand::RemoveVirtualTextsByPrefix { buffer_id, prefix } => {
@@ -3659,21 +3697,42 @@ impl Editor {
             PluginCommand::ClearVirtualTexts { buffer_id } => {
                 self.handle_clear_virtual_texts(buffer_id);
             }
-            PluginCommand::AddVirtualLine { buffer_id, position, text, fg_color, bg_color, above, namespace, priority } => {
-                self.handle_add_virtual_line(buffer_id, position, text, fg_color, bg_color, above, namespace, priority);
+            PluginCommand::AddVirtualLine {
+                buffer_id,
+                position,
+                text,
+                fg_color,
+                bg_color,
+                above,
+                namespace,
+                priority,
+            } => {
+                self.handle_add_virtual_line(
+                    buffer_id, position, text, fg_color, bg_color, above, namespace, priority,
+                );
             }
-            PluginCommand::ClearVirtualTextNamespace { buffer_id, namespace } => {
+            PluginCommand::ClearVirtualTextNamespace {
+                buffer_id,
+                namespace,
+            } => {
                 self.handle_clear_virtual_text_namespace(buffer_id, namespace);
             }
 
             // ==================== Menu Commands ====================
-            PluginCommand::AddMenuItem { menu_label, item, position } => {
+            PluginCommand::AddMenuItem {
+                menu_label,
+                item,
+                position,
+            } => {
                 self.handle_add_menu_item(menu_label, item, position);
             }
             PluginCommand::AddMenu { menu, position } => {
                 self.handle_add_menu(menu, position);
             }
-            PluginCommand::RemoveMenuItem { menu_label, item_label } => {
+            PluginCommand::RemoveMenuItem {
+                menu_label,
+                item_label,
+            } => {
                 self.handle_remove_menu_item(menu_label, item_label);
             }
             PluginCommand::RemoveMenu { menu_label } => {
@@ -3684,7 +3743,10 @@ impl Editor {
             PluginCommand::FocusSplit { split_id } => {
                 self.handle_focus_split(split_id);
             }
-            PluginCommand::SetSplitBuffer { split_id, buffer_id } => {
+            PluginCommand::SetSplitBuffer {
+                split_id,
+                buffer_id,
+            } => {
                 self.handle_set_split_buffer(split_id, buffer_id);
             }
             PluginCommand::CloseSplit { split_id } => {
@@ -3696,21 +3758,36 @@ impl Editor {
             PluginCommand::DistributeSplitsEvenly { split_ids: _ } => {
                 self.handle_distribute_splits_evenly();
             }
-            PluginCommand::SetBufferCursor { buffer_id, position } => {
+            PluginCommand::SetBufferCursor {
+                buffer_id,
+                position,
+            } => {
                 self.handle_set_buffer_cursor(buffer_id, position);
             }
 
             // ==================== View/Layout Commands ====================
-            PluginCommand::SetLayoutHints { buffer_id, split_id, range: _, hints } => {
+            PluginCommand::SetLayoutHints {
+                buffer_id,
+                split_id,
+                range: _,
+                hints,
+            } => {
                 self.handle_set_layout_hints(buffer_id, split_id, hints);
             }
             PluginCommand::SetLineNumbers { buffer_id, enabled } => {
                 self.handle_set_line_numbers(buffer_id, enabled);
             }
-            PluginCommand::SubmitViewTransform { buffer_id, split_id, payload } => {
+            PluginCommand::SubmitViewTransform {
+                buffer_id,
+                split_id,
+                payload,
+            } => {
                 self.handle_submit_view_transform(buffer_id, split_id, payload);
             }
-            PluginCommand::ClearViewTransform { buffer_id: _, split_id } => {
+            PluginCommand::ClearViewTransform {
+                buffer_id: _,
+                split_id,
+            } => {
                 self.handle_clear_view_transform(split_id);
             }
             PluginCommand::RefreshLines { buffer_id } => {
@@ -3735,7 +3812,12 @@ impl Editor {
             PluginCommand::UnregisterCommand { name } => {
                 self.handle_unregister_command(name);
             }
-            PluginCommand::DefineMode { name, parent, bindings, read_only } => {
+            PluginCommand::DefineMode {
+                name,
+                parent,
+                bindings,
+                read_only,
+            } => {
                 self.handle_define_mode(name, parent, bindings, read_only);
             }
 
@@ -3746,7 +3828,12 @@ impl Editor {
             PluginCommand::OpenFileAtLocation { path, line, column } => {
                 return self.handle_open_file_at_location(path, line, column);
             }
-            PluginCommand::OpenFileInSplit { split_id, path, line, column } => {
+            PluginCommand::OpenFileInSplit {
+                split_id,
+                path,
+                line,
+                column,
+            } => {
                 return self.handle_open_file_in_split(split_id, path, line, column);
             }
             PluginCommand::ShowBuffer { buffer_id } => {
@@ -3757,7 +3844,12 @@ impl Editor {
             }
 
             // ==================== LSP Commands ====================
-            PluginCommand::SendLspRequest { language, method, params, request_id } => {
+            PluginCommand::SendLspRequest {
+                language,
+                method,
+                params,
+                request_id,
+            } => {
                 self.handle_send_lsp_request(language, method, params, request_id);
             }
 
@@ -3767,7 +3859,12 @@ impl Editor {
             }
 
             // ==================== Deprecated Commands ====================
-            PluginCommand::SpawnProcess { command, args, cwd, callback_id: _ } => {
+            PluginCommand::SpawnProcess {
+                command,
+                args,
+                cwd,
+                callback_id: _,
+            } => {
                 tracing::warn!(
                     "SpawnProcess command with callback is deprecated. TypeScript plugins use native async. Command: {}",
                     command

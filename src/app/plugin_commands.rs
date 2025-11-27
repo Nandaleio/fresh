@@ -3,7 +3,9 @@
 //! This module groups plugin commands by domain for better maintainability.
 
 use crate::model::event::{BufferId, CursorId, Event, SplitId};
-use crate::services::plugins::api::{LayoutHints, MenuPosition, PluginResponse, ViewTransformPayload};
+use crate::services::plugins::api::{
+    LayoutHints, MenuPosition, PluginResponse, ViewTransformPayload,
+};
 use crate::view::overlay::{OverlayHandle, OverlayNamespace};
 use crate::view::split::SplitViewState;
 use std::io;
@@ -65,7 +67,11 @@ impl Editor {
     }
 
     /// Handle ClearNamespace command
-    pub(super) fn handle_clear_namespace(&mut self, buffer_id: BufferId, namespace: OverlayNamespace) {
+    pub(super) fn handle_clear_namespace(
+        &mut self,
+        buffer_id: BufferId,
+        namespace: OverlayNamespace,
+    ) {
         if let Some(state) = self.buffers.get_mut(&buffer_id) {
             state
                 .overlays
@@ -132,7 +138,11 @@ impl Editor {
     }
 
     /// Handle RemoveVirtualText command
-    pub(super) fn handle_remove_virtual_text(&mut self, buffer_id: BufferId, virtual_text_id: String) {
+    pub(super) fn handle_remove_virtual_text(
+        &mut self,
+        buffer_id: BufferId,
+        virtual_text_id: String,
+    ) {
         if let Some(state) = self.buffers.get_mut(&buffer_id) {
             state
                 .virtual_texts
@@ -141,7 +151,11 @@ impl Editor {
     }
 
     /// Handle RemoveVirtualTextsByPrefix command
-    pub(super) fn handle_remove_virtual_texts_by_prefix(&mut self, buffer_id: BufferId, prefix: String) {
+    pub(super) fn handle_remove_virtual_texts_by_prefix(
+        &mut self,
+        buffer_id: BufferId,
+        prefix: String,
+    ) {
         if let Some(state) = self.buffers.get_mut(&buffer_id) {
             state
                 .virtual_texts
@@ -197,7 +211,11 @@ impl Editor {
     }
 
     /// Handle ClearVirtualTextNamespace command
-    pub(super) fn handle_clear_virtual_text_namespace(&mut self, buffer_id: BufferId, namespace: String) {
+    pub(super) fn handle_clear_virtual_text_namespace(
+        &mut self,
+        buffer_id: BufferId,
+        namespace: String,
+    ) {
         if let Some(state) = self.buffers.get_mut(&buffer_id) {
             use crate::view::virtual_text::VirtualTextNamespace;
             let ns = VirtualTextNamespace::from_string(namespace);
@@ -526,7 +544,12 @@ impl Editor {
     // ==================== Text Editing Commands ====================
 
     /// Handle InsertText command
-    pub(super) fn handle_insert_text(&mut self, buffer_id: BufferId, position: usize, text: String) {
+    pub(super) fn handle_insert_text(
+        &mut self,
+        buffer_id: BufferId,
+        position: usize,
+        text: String,
+    ) {
         if let Some(state) = self.buffers.get_mut(&buffer_id) {
             let event = Event::Insert {
                 position,
@@ -541,7 +564,11 @@ impl Editor {
     }
 
     /// Handle DeleteRange command
-    pub(super) fn handle_delete_range(&mut self, buffer_id: BufferId, range: std::ops::Range<usize>) {
+    pub(super) fn handle_delete_range(
+        &mut self,
+        buffer_id: BufferId,
+        range: std::ops::Range<usize>,
+    ) {
         if let Some(state) = self.buffers.get_mut(&buffer_id) {
             let deleted_text = state.get_text_range(range.start, range.end);
             let event = Event::Delete {
@@ -832,7 +859,10 @@ impl Editor {
     }
 
     /// Handle SetPromptSuggestions command
-    pub(super) fn handle_set_prompt_suggestions(&mut self, suggestions: Vec<crate::input::commands::Suggestion>) {
+    pub(super) fn handle_set_prompt_suggestions(
+        &mut self,
+        suggestions: Vec<crate::input::commands::Suggestion>,
+    ) {
         // Update the current prompt's suggestions
         if let Some(prompt) = &mut self.prompt {
             prompt.suggestions = suggestions;
@@ -864,8 +894,8 @@ impl Editor {
         bindings: Vec<(String, String)>,
         read_only: bool,
     ) {
-        use crate::input::buffer_mode::BufferMode;
         use super::parse_key_string;
+        use crate::input::buffer_mode::BufferMode;
 
         let mut mode = BufferMode::new(name.clone()).with_read_only(read_only);
 

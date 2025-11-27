@@ -216,7 +216,12 @@ impl Editor {
     }
 
     /// Handle LSP progress notification ($/progress)
-    pub(super) fn handle_lsp_progress(&mut self, language: String, token: String, value: LspProgressValue) {
+    pub(super) fn handle_lsp_progress(
+        &mut self,
+        language: String,
+        token: String,
+        value: LspProgressValue,
+    ) {
         match value {
             LspProgressValue::Begin {
                 title,
@@ -310,7 +315,8 @@ impl Editor {
         let old_status = self.lsp_server_statuses.get(&language).cloned();
 
         // Update server status
-        self.lsp_server_statuses.insert(language.clone(), status.clone());
+        self.lsp_server_statuses
+            .insert(language.clone(), status.clone());
         self.update_lsp_status_from_server_statuses();
 
         // Handle server crash - trigger auto-restart
@@ -379,9 +385,10 @@ impl Editor {
         result: Result<Value, String>,
     ) {
         tracing::debug!("Received plugin LSP response (request_id={})", request_id);
-        self.send_plugin_response(
-            crate::services::plugins::api::PluginResponse::LspRequest { request_id, result },
-        );
+        self.send_plugin_response(crate::services::plugins::api::PluginResponse::LspRequest {
+            request_id,
+            result,
+        });
     }
 }
 
@@ -470,11 +477,7 @@ impl Editor {
 
         if let Some(root_path) = root_path {
             if let Err(e) = view.load_gitignore_for_dir(&root_path) {
-                tracing::warn!(
-                    "Failed to load root .gitignore from {:?}: {}",
-                    root_path,
-                    e
-                );
+                tracing::warn!("Failed to load root .gitignore from {:?}: {}", root_path, e);
             } else {
                 tracing::debug!("Loaded root .gitignore from {:?}", root_path);
             }
@@ -615,7 +618,9 @@ impl Editor {
             .iter()
             .filter_map(|(buf_id, meta)| {
                 meta.file_path().and_then(|path| {
-                    if crate::services::lsp::manager::detect_language(path) == Some(language.to_string()) {
+                    if crate::services::lsp::manager::detect_language(path)
+                        == Some(language.to_string())
+                    {
                         Some((*buf_id, path.clone()))
                     } else {
                         None

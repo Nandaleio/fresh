@@ -270,14 +270,21 @@ mod tests {
 
         // Verify the fancy quote is multi-byte
         assert_eq!(fancy_quote.len(), 3, "Fancy quote should be 3 bytes");
-        assert_eq!(fancy_quote.chars().count(), 1, "Fancy quote should be 1 char");
+        assert_eq!(
+            fancy_quote.chars().count(),
+            1,
+            "Fancy quote should be 1 char"
+        );
 
         // Create a suggestion with this description
         let mut suggestion = Suggestion::new("Test Command".to_string());
         suggestion.description = Some(description.clone());
 
         // Create a prompt with this suggestion
-        let mut prompt = Prompt::new("Test: ".to_string(), crate::view::prompt::PromptType::Command);
+        let mut prompt = Prompt::new(
+            "Test: ".to_string(),
+            crate::view::prompt::PromptType::Command,
+        );
         prompt.suggestions = vec![suggestion];
 
         // Set up terminal with width that forces truncation at the multi-byte char
@@ -323,7 +330,10 @@ mod tests {
             let mut suggestion = Suggestion::new("Cmd".to_string());
             suggestion.description = Some(description.to_string());
 
-            let mut prompt = Prompt::new("Test: ".to_string(), crate::view::prompt::PromptType::Command);
+            let mut prompt = Prompt::new(
+                "Test: ".to_string(),
+                crate::view::prompt::PromptType::Command,
+            );
             prompt.suggestions = vec![suggestion];
 
             // Try various widths to catch any boundary issues
