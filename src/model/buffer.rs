@@ -20,6 +20,44 @@ pub const LOAD_CHUNK_SIZE: usize = 1024 * 1024;
 /// Chunk alignment for lazy loading (64 KB)
 pub const CHUNK_ALIGNMENT: usize = 64 * 1024;
 
+/// Line ending format used in the file
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum LineEnding {
+    /// Unix/Linux/Mac format (\n)
+    LF,
+    /// Windows format (\r\n)
+    CRLF,
+    /// Old Mac format (\r) - rare but supported
+    CR,
+}
+
+impl Default for LineEnding {
+    fn default() -> Self {
+        // Default to LF (Unix) for new files
+        LineEnding::LF
+    }
+}
+
+impl LineEnding {
+    /// Get the string representation of this line ending
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            LineEnding::LF => "\n",
+            LineEnding::CRLF => "\r\n",
+            LineEnding::CR => "\r",
+        }
+    }
+
+    /// Get the display name for status bar
+    pub fn display_name(&self) -> &'static str {
+        match self {
+            LineEnding::LF => "LF",
+            LineEnding::CRLF => "CRLF",
+            LineEnding::CR => "CR",
+        }
+    }
+}
+
 /// Represents a line number (simplified for new implementation)
 /// Legacy enum kept for backwards compatibility - always Absolute now
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -87,6 +125,9 @@ pub struct TextBuffer {
     /// Is this a binary file? Binary files are opened read-only and render
     /// unprintable characters as code points.
     is_binary: bool,
+
+    /// Line ending format detected from the file (or default for new files)
+    line_ending: LineEnding,
 }
 
 impl TextBuffer {
@@ -101,6 +142,7 @@ impl TextBuffer {
             modified: false,
             large_file: false,
             is_binary: false,
+            line_ending: LineEnding::default(),
         }
     }
 
@@ -124,6 +166,7 @@ impl TextBuffer {
             modified: false,
             large_file: false,
             is_binary: false,
+            line_ending: LineEnding::default(),
         }
     }
 
@@ -142,6 +185,7 @@ impl TextBuffer {
             modified: false,
             large_file: false,
             is_binary: false,
+            line_ending: LineEnding::default(),
         }
     }
 
@@ -181,11 +225,18 @@ impl TextBuffer {
         // Detect if this is a binary file
         let is_binary = Self::detect_binary(&contents);
 
-        let mut buffer = Self::from_bytes(contents);
+        // Detect line ending format before normalizing
+        let line_ending = Self::detect_line_ending(&contents);
+
+        // Normalize line endings to LF for internal representation
+        let normalized_contents = Self::normalize_line_endings(contents);
+
+        let mut buffer = Self::from_bytes(normalized_contents);
         buffer.file_path = Some(path.to_path_buf());
         buffer.modified = false;
         buffer.large_file = false;
         buffer.is_binary = is_binary;
+        buffer.line_ending = line_ending;
         Ok(buffer)
     }
 
@@ -195,14 +246,16 @@ impl TextBuffer {
 
         let path = path.as_ref();
 
-        // Read a sample of the file to detect if it's binary
-        // We read the first 8KB for binary detection
-        let is_binary = {
+        // Read a sample of the file to detect if it's binary and line ending format
+        // We read the first 8KB for both binary and line ending detection
+        let (is_binary, line_ending) = {
             let mut file = std::fs::File::open(path)?;
             let sample_size = file_size.min(8 * 1024);
             let mut sample = vec![0u8; sample_size];
             file.read_exact(&mut sample)?;
-            Self::detect_binary(&sample)
+            let is_binary = Self::detect_binary(&sample);
+            let line_ending = Self::detect_line_ending(&sample);
+            (is_binary, line_ending)
         };
 
         // Create an unloaded buffer that references the entire file
@@ -231,6 +284,7 @@ impl TextBuffer {
             modified: false,
             large_file: true,
             is_binary,
+            line_ending,
         })
     }
 
@@ -282,10 +336,12 @@ impl TextBuffer {
 
             match &buffer.data {
                 BufferData::Loaded { data, .. } => {
-                    // Write from memory
+                    // Write from memory, converting line endings if necessary
                     let start = piece_view.buffer_offset;
                     let end = start + piece_view.bytes;
-                    out_file.write_all(&data[start..end])?;
+                    let chunk = &data[start..end];
+                    let converted = Self::convert_line_endings(chunk, self.line_ending);
+                    out_file.write_all(&converted)?;
                 }
                 BufferData::Unloaded {
                     file_path,
@@ -293,6 +349,8 @@ impl TextBuffer {
                     ..
                 } => {
                     // Stream from source file without loading into memory
+                    // NOTE: Unloaded regions come directly from the original file and already
+                    // have the correct line endings, so we don't need to convert them
                     let source_file = match &mut source_file_cache {
                         Some((cached_path, file)) if cached_path == file_path => file,
                         _ => {
@@ -839,6 +897,17 @@ impl TextBuffer {
         self.is_binary
     }
 
+    /// Get the line ending format for this buffer
+    pub fn line_ending(&self) -> LineEnding {
+        self.line_ending
+    }
+
+    /// Set the line ending format for this buffer
+    pub fn set_line_ending(&mut self, line_ending: LineEnding) {
+        self.line_ending = line_ending;
+        self.modified = true; // Changing line endings marks buffer as modified
+    }
+
     /// Detect if the given bytes contain binary content.
     ///
     /// Binary content is detected by looking for:
@@ -904,6 +973,104 @@ impl TextBuffer {
         }
 
         false
+    }
+
+    /// Detect the line ending format from a sample of bytes
+    ///
+    /// Uses majority voting: counts CRLF, LF-only, and CR-only occurrences
+    /// and returns the most common format.
+    pub fn detect_line_ending(bytes: &[u8]) -> LineEnding {
+        // Only check the first 8KB for line ending detection (same as binary detection)
+        let check_len = bytes.len().min(8 * 1024);
+        let sample = &bytes[..check_len];
+
+        let mut crlf_count = 0;
+        let mut lf_only_count = 0;
+        let mut cr_only_count = 0;
+
+        let mut i = 0;
+        while i < sample.len() {
+            if sample[i] == b'\r' {
+                // Check if this is CRLF
+                if i + 1 < sample.len() && sample[i + 1] == b'\n' {
+                    crlf_count += 1;
+                    i += 2; // Skip both \r and \n
+                    continue;
+                } else {
+                    // CR only (old Mac format)
+                    cr_only_count += 1;
+                }
+            } else if sample[i] == b'\n' {
+                // LF only (Unix format)
+                lf_only_count += 1;
+            }
+            i += 1;
+        }
+
+        // Use majority voting to determine line ending
+        if crlf_count > lf_only_count && crlf_count > cr_only_count {
+            LineEnding::CRLF
+        } else if cr_only_count > lf_only_count && cr_only_count > crlf_count {
+            LineEnding::CR
+        } else {
+            // Default to LF if no clear winner or if LF wins
+            LineEnding::LF
+        }
+    }
+
+    /// Normalize line endings in the given bytes to LF only
+    ///
+    /// Converts CRLF (\r\n) and CR (\r) to LF (\n) for internal representation.
+    /// This makes editing and cursor movement simpler while preserving the
+    /// original format for saving.
+    pub fn normalize_line_endings(bytes: Vec<u8>) -> Vec<u8> {
+        let mut normalized = Vec::with_capacity(bytes.len());
+        let mut i = 0;
+
+        while i < bytes.len() {
+            if bytes[i] == b'\r' {
+                // Check if this is CRLF
+                if i + 1 < bytes.len() && bytes[i + 1] == b'\n' {
+                    // CRLF -> LF
+                    normalized.push(b'\n');
+                    i += 2; // Skip both \r and \n
+                    continue;
+                } else {
+                    // CR only -> LF
+                    normalized.push(b'\n');
+                }
+            } else {
+                // Copy byte as-is
+                normalized.push(bytes[i]);
+            }
+            i += 1;
+        }
+
+        normalized
+    }
+
+    /// Convert LF line endings back to the specified format
+    ///
+    /// Used when saving files to restore the original line ending format.
+    fn convert_line_endings(bytes: &[u8], target_ending: LineEnding) -> Vec<u8> {
+        if target_ending == LineEnding::LF {
+            // No conversion needed
+            return bytes.to_vec();
+        }
+
+        let replacement = target_ending.as_str().as_bytes();
+        let mut result = Vec::with_capacity(bytes.len());
+
+        for &byte in bytes {
+            if byte == b'\n' {
+                // Replace LF with target line ending
+                result.extend_from_slice(replacement);
+            } else {
+                result.push(byte);
+            }
+        }
+
+        result
     }
 
     /// Get text for a specific line

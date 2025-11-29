@@ -5,6 +5,7 @@ pub mod basic;
 pub mod binary_file;
 pub mod buffer_lifecycle;
 pub mod command_palette;
+pub mod crlf_rendering;
 pub mod document_model;
 pub mod emacs_actions;
 pub mod file_explorer;
