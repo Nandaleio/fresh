@@ -2207,6 +2207,31 @@ impl Editor {
                 needs_render = true;
             }
             MouseEventKind::Moved => {
+                // Dispatch MouseMove hook to plugins (fire-and-forget, no blocking check)
+                if let Some(ts_manager) = &self.ts_plugin_manager {
+                    // Find content rect for the split under the mouse
+                    let content_rect = self.cached_layout.split_areas.iter()
+                        .find(|(_, _, content_rect, _, _, _)| {
+                            col >= content_rect.x
+                                && col < content_rect.x + content_rect.width
+                                && row >= content_rect.y
+                                && row < content_rect.y + content_rect.height
+                        })
+                        .map(|(_, _, rect, _, _, _)| *rect);
+
+                    let (content_x, content_y) = content_rect
+                        .map(|r| (r.x, r.y))
+                        .unwrap_or((0, 0));
+
+                    let hook_args = HookArgs::MouseMove {
+                        column: col,
+                        row,
+                        content_x,
+                        content_y,
+                    };
+                    ts_manager.run_hook("mouse_move", hook_args);
+                }
+
                 // Only re-render if hover target actually changed
                 let hover_changed = self.update_hover_target(col, row);
                 needs_render = hover_changed;
@@ -3269,6 +3294,22 @@ impl Editor {
         content_rect: ratatui::layout::Rect,
     ) -> std::io::Result<()> {
         use crate::model::event::Event;
+
+        // Dispatch MouseClick hook to plugins
+        // Plugins can handle clicks on their virtual buffers
+        if let Some(ts_manager) = &self.ts_plugin_manager {
+            if ts_manager.has_hook_handlers("mouse_click") {
+                let hook_args = HookArgs::MouseClick {
+                    column: col,
+                    row,
+                    button: "left".to_string(),
+                    modifiers: String::new(),
+                    content_x: content_rect.x,
+                    content_y: content_rect.y,
+                };
+                ts_manager.run_hook("mouse_click", hook_args);
+            }
+        }
 
         // Focus this split
         self.split_manager.set_active_split(split_id);

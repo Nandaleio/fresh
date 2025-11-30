@@ -541,6 +541,22 @@ setPromptSuggestions(suggestions: PromptSuggestion[]): boolean
 
 ### Buffer Mutations
 
+#### `setClipboard`
+
+Copy text to the system clipboard
+Copies the provided text to both the internal and system clipboard.
+Uses OSC 52 and arboard for cross-platform compatibility.
+
+```typescript
+setClipboard(text: string): void
+```
+
+**Parameters:**
+
+| Name | Type | Description |
+|------|------|-------------|
+| `text` | `string` | Text to copy to clipboard |
+
 #### `insertText`
 
 Insert text at a byte position in a buffer

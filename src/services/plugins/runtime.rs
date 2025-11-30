@@ -188,6 +188,22 @@ fn op_fresh_debug(#[string] message: String) {
     tracing::debug!("TypeScript plugin: {}", message);
 }
 
+/// Copy text to the system clipboard
+///
+/// Copies the provided text to both the internal and system clipboard.
+/// Uses OSC 52 and arboard for cross-platform compatibility.
+/// @param text - Text to copy to clipboard
+#[op2(fast)]
+fn op_fresh_set_clipboard(state: &mut OpState, #[string] text: String) {
+    if let Some(runtime_state) = state.try_borrow::<Rc<RefCell<TsRuntimeState>>>() {
+        let runtime_state = runtime_state.borrow();
+        let _ = runtime_state
+            .command_sender
+            .send(PluginCommand::SetClipboard { text: text.clone() });
+    }
+    tracing::debug!("TypeScript plugin set_clipboard: {} chars", text.len());
+}
+
 /// Get the buffer ID of the focused editor pane
 ///
 /// Returns 0 if no buffer is active (rare edge case).
@@ -2486,6 +2502,7 @@ extension!(
     ops = [
         op_fresh_set_status,
         op_fresh_debug,
+        op_fresh_set_clipboard,
         op_fresh_get_active_buffer_id,
         op_fresh_get_cursor_position,
         op_fresh_get_buffer_path,
@@ -2639,6 +2656,11 @@ impl TypeScriptRuntime {
                     },
                     debug(message) {
                         core.ops.op_fresh_debug(message);
+                    },
+
+                    // Clipboard
+                    copyToClipboard(text) {
+                        core.ops.op_fresh_set_clipboard(text);
                     },
 
                     // Buffer queries

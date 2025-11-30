@@ -172,6 +172,23 @@ pub enum HookArgs {
         button: String,
         /// Modifier keys: "shift", "ctrl", "alt", or combinations like "shift+ctrl"
         modifiers: String,
+        /// Content area X offset (where the buffer content starts on screen)
+        content_x: u16,
+        /// Content area Y offset (where the buffer content starts on screen)
+        content_y: u16,
+    },
+
+    /// Mouse move/hover event - fired when mouse moves in the editor viewport
+    /// Plugins can use this to implement hover effects
+    MouseMove {
+        /// Column (x coordinate) in screen cells
+        column: u16,
+        /// Row (y coordinate) in screen cells
+        row: u16,
+        /// Content area X offset (where the buffer content starts on screen)
+        content_x: u16,
+        /// Content area Y offset (where the buffer content starts on screen)
+        content_y: u16,
     },
 }
 
@@ -532,12 +549,24 @@ pub fn hook_args_to_json(args: &HookArgs) -> Result<String> {
             row,
             button,
             modifiers,
+            content_x,
+            content_y,
         } => {
             serde_json::json!({
                 "column": column,
                 "row": row,
                 "button": button,
                 "modifiers": modifiers,
+                "content_x": content_x,
+                "content_y": content_y,
+            })
+        }
+        HookArgs::MouseMove { column, row, content_x, content_y } => {
+            serde_json::json!({
+                "column": column,
+                "row": row,
+                "content_x": content_x,
+                "content_y": content_y,
             })
         }
     };
