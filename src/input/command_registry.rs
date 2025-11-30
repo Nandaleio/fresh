@@ -3,7 +3,7 @@
 //! This module allows plugins to register custom commands dynamically
 //! while maintaining the built-in command set.
 
-use crate::input::commands::{get_all_commands, Command, Suggestion};
+use crate::input::commands::{get_all_commands, Command, CommandSource, Suggestion};
 use crate::input::keybindings::Action;
 use crate::input::keybindings::KeyContext;
 use std::sync::{Arc, RwLock};
@@ -154,11 +154,12 @@ impl CommandRegistry {
                 let keybinding =
                     keybinding_resolver.get_keybinding_for_action(&cmd.action, current_context);
                 let history_pos = self.history_position(&cmd.name);
-                let suggestion = Suggestion::with_all(
+                let suggestion = Suggestion::with_source(
                     cmd.name.clone(),
                     Some(cmd.description),
                     !available,
                     keybinding,
+                    Some(cmd.source),
                 );
                 (suggestion, history_pos)
             })
@@ -242,6 +243,7 @@ mod tests {
             description: "A test command".to_string(),
             action: Action::None,
             contexts: vec![],
+            source: CommandSource::Builtin,
         };
 
         registry.register(custom_command.clone());
@@ -261,6 +263,7 @@ mod tests {
             description: "A test command".to_string(),
             action: Action::None,
             contexts: vec![],
+            source: CommandSource::Builtin,
         };
 
         registry.register(custom_command);
@@ -279,6 +282,7 @@ mod tests {
             description: "First version".to_string(),
             action: Action::None,
             contexts: vec![],
+            source: CommandSource::Builtin,
         };
 
         let command2 = Command {
@@ -286,6 +290,7 @@ mod tests {
             description: "Second version".to_string(),
             action: Action::None,
             contexts: vec![],
+            source: CommandSource::Builtin,
         };
 
         registry.register(command1);
@@ -307,6 +312,7 @@ mod tests {
             description: "".to_string(),
             action: Action::None,
             contexts: vec![],
+            source: CommandSource::Builtin,
         });
 
         registry.register(Command {
@@ -314,6 +320,7 @@ mod tests {
             description: "".to_string(),
             action: Action::None,
             contexts: vec![],
+            source: CommandSource::Builtin,
         });
 
         registry.register(Command {
@@ -321,6 +328,7 @@ mod tests {
             description: "".to_string(),
             action: Action::None,
             contexts: vec![],
+            source: CommandSource::Builtin,
         });
 
         assert_eq!(registry.plugin_command_count(), 3);
@@ -346,6 +354,7 @@ mod tests {
             description: "Test save command".to_string(),
             action: Action::None,
             contexts: vec![KeyContext::Normal],
+            source: CommandSource::Builtin,
         });
 
         let results = registry.filter("save", KeyContext::Normal, &keybindings, false);
@@ -370,6 +379,7 @@ mod tests {
             description: "Available only in normal context".to_string(),
             action: Action::None,
             contexts: vec![KeyContext::Normal],
+            source: CommandSource::Builtin,
         });
 
         registry.register(Command {
@@ -377,6 +387,7 @@ mod tests {
             description: "Available only in popup context".to_string(),
             action: Action::None,
             contexts: vec![KeyContext::Popup],
+            source: CommandSource::Builtin,
         });
 
         // In normal context, "Popup Only" should be disabled
@@ -402,6 +413,7 @@ mod tests {
             description: "".to_string(),
             action: Action::None,
             contexts: vec![],
+            source: CommandSource::Builtin,
         });
 
         registry.register(Command {
@@ -409,6 +421,7 @@ mod tests {
             description: "".to_string(),
             action: Action::None,
             contexts: vec![],
+            source: CommandSource::Builtin,
         });
 
         let all = registry.get_all();
@@ -430,6 +443,7 @@ mod tests {
             description: "Custom save implementation".to_string(),
             action: Action::None,
             contexts: vec![],
+            source: CommandSource::Builtin,
         });
 
         // Should now find the custom version
@@ -522,6 +536,7 @@ mod tests {
             description: "".to_string(),
             action: Action::None,
             contexts: vec![],
+            source: CommandSource::Builtin,
         });
 
         registry.register(Command {
@@ -529,6 +544,7 @@ mod tests {
             description: "".to_string(),
             action: Action::None,
             contexts: vec![],
+            source: CommandSource::Builtin,
         });
 
         // Use one built-in command

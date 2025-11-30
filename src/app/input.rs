@@ -940,6 +940,7 @@ impl Editor {
                                 value: Some(lang.clone()),
                                 disabled: false,
                                 keybinding: None,
+                                source: None,
                             }
                         })
                         .collect();
@@ -3419,6 +3420,7 @@ impl Editor {
                     value: Some(theme_name.to_string()),
                     disabled: false,
                     keybinding: None,
+                    source: None,
                 }
             })
             .collect();

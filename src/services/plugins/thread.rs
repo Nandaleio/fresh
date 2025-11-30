@@ -447,6 +447,7 @@ mod plugin_thread_tests {
             PluginResponse::VirtualBufferCreated {
                 request_id: 456,
                 buffer_id: crate::model::event::BufferId(7),
+                split_id: Some(crate::model::event::SplitId(1)),
             },
         );
 

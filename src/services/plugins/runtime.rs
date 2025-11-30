@@ -160,6 +160,8 @@ struct TsRuntimeState {
     background_processes: Rc<RefCell<HashMap<u64, tokio::process::Child>>>,
     /// Next process ID for background processes
     next_process_id: Rc<RefCell<u64>>,
+    /// Current plugin name (set during plugin loading for command registration)
+    current_plugin_name: Rc<RefCell<Option<String>>>,
 }
 
 /// Display a transient message in the editor's status bar
@@ -817,11 +819,20 @@ fn op_fresh_register_command(
                 .collect()
         };
 
+        // Get the current plugin name for the command source
+        let source = if let Some(plugin_name) = runtime_state.current_plugin_name.borrow().clone() {
+            crate::input::commands::CommandSource::Plugin(plugin_name)
+        } else {
+            // Fallback to builtin if no plugin context (shouldn't normally happen)
+            crate::input::commands::CommandSource::Builtin
+        };
+
         let command = crate::input::commands::Command {
             name: name.clone(),
             description,
             action: crate::input::keybindings::Action::PluginAction(action),
             contexts: context_list,
+            source,
         };
 
         let result = runtime_state
@@ -1532,6 +1543,7 @@ fn op_fresh_set_prompt_suggestions(
                 value: s.value,
                 disabled: s.disabled.unwrap_or(false),
                 keybinding: s.keybinding,
+                source: None,
             })
             .collect();
         let result = runtime_state
@@ -2564,6 +2576,8 @@ pub struct TypeScriptRuntime {
     event_handlers: Rc<RefCell<HashMap<String, Vec<String>>>>,
     /// Pending response senders (shared with runtime state for delivering responses)
     pending_responses: PendingResponses,
+    /// Current plugin name (shared with runtime state for command registration)
+    current_plugin_name: Rc<RefCell<Option<String>>>,
 }
 
 impl TypeScriptRuntime {
@@ -2594,6 +2608,7 @@ impl TypeScriptRuntime {
         crate::v8_init::init();
 
         let event_handlers = Rc::new(RefCell::new(HashMap::new()));
+        let current_plugin_name = Rc::new(RefCell::new(None));
         let runtime_state = Rc::new(RefCell::new(TsRuntimeState {
             state_snapshot,
             command_sender,
@@ -2602,6 +2617,7 @@ impl TypeScriptRuntime {
             next_request_id: Rc::new(RefCell::new(1)),
             background_processes: Rc::new(RefCell::new(HashMap::new())),
             next_process_id: Rc::new(RefCell::new(1)),
+            current_plugin_name: current_plugin_name.clone(),
         }));
 
         let mut js_runtime = JsRuntime::new(RuntimeOptions {
@@ -2914,6 +2930,7 @@ impl TypeScriptRuntime {
             js_runtime,
             event_handlers,
             pending_responses,
+            current_plugin_name,
         })
     }
 
@@ -3226,12 +3243,21 @@ impl TypeScriptPluginManager {
 
         tracing::info!("Loading TypeScript plugin: {} from {:?}", plugin_name, path);
 
+        // Set current plugin name for command registration
+        *self.runtime.current_plugin_name.borrow_mut() = Some(plugin_name.clone());
+
         // Load and execute the module
         let path_str = path
             .to_str()
             .ok_or_else(|| anyhow!("Invalid path encoding"))?;
 
-        self.runtime.load_module(path_str).await?;
+        let result = self.runtime.load_module(path_str).await;
+
+        // Clear current plugin name after loading
+        *self.runtime.current_plugin_name.borrow_mut() = None;
+
+        // Propagate any error
+        result?;
 
         // Store plugin info
         self.plugins.insert(
@@ -5284,6 +5310,7 @@ mod tests {
                             crate::services::plugins::api::PluginResponse::VirtualBufferCreated {
                                 request_id: req_id,
                                 buffer_id: BufferId(100),
+                                split_id: Some(crate::model::event::SplitId(1)),
                             };
                         handle.deliver_response(response);
                         eprintln!("Delivered response for request_id={}", req_id);
@@ -5574,6 +5601,7 @@ mod tests {
                             crate::services::plugins::api::PluginResponse::VirtualBufferCreated {
                                 request_id: req_id,
                                 buffer_id: BufferId(100), // Fake buffer ID
+                                split_id: Some(crate::model::event::SplitId(1)),
                             };
                         handle.deliver_response(response);
                         eprintln!("Delivered response for request_id={}", req_id);

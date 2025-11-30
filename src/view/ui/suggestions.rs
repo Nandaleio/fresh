@@ -1,5 +1,6 @@
 //! Autocomplete suggestions and command palette UI rendering
 
+use crate::input::commands::CommandSource;
 use crate::view::prompt::Prompt;
 use ratatui::layout::Rect;
 use ratatui::style::{Color, Modifier, Style};
@@ -79,7 +80,7 @@ impl SuggestionsRenderer {
 
         let visible_suggestions = &prompt.suggestions[start_idx..end_idx];
 
-        // Fixed column layout: "  Name  |  Keybinding  |  Description"
+        // Fixed column layout: "  Name  |  Keybinding  |  Description  |  Source"
         let left_margin = 2;
         let column_spacing = 2;
         let available_width = inner_area.width as usize;
@@ -87,6 +88,7 @@ impl SuggestionsRenderer {
         // Fixed column widths for consistent layout
         let name_column_width = 30; // Fixed width for command names
         let keybinding_column_width = 12; // Fixed width for keybindings (e.g., "Ctrl+Shift+P")
+        let source_column_width = 15; // Fixed width for source (e.g., "builtin", "live_grep")
 
         for (idx, suggestion) in visible_suggestions.iter().enumerate() {
             let actual_idx = start_idx + idx;
@@ -194,35 +196,105 @@ impl SuggestionsRenderer {
             // Spacing before description column
             spans.push(Span::styled(" ".repeat(column_spacing), base_style));
 
-            // Column 3: Description (takes remaining space)
-            if let Some(desc) = &suggestion.description {
-                // Calculate how much space we've used so far
-                let used_width = left_margin
-                    + name_column_width
-                    + column_spacing
-                    + keybinding_column_width
-                    + column_spacing;
+            // Calculate space used by fixed columns
+            let fixed_columns_width = left_margin
+                + name_column_width
+                + column_spacing
+                + keybinding_column_width
+                + column_spacing;
 
+            // Reserve space for source column at the end
+            let source_reserved = column_spacing + source_column_width;
+
+            // Column 3: Description (flexible width, leaves room for source)
+            if let Some(desc) = &suggestion.description {
                 // Only show description if we have enough space
-                if used_width < available_width {
-                    let remaining_width = available_width.saturating_sub(used_width);
+                if fixed_columns_width + source_reserved < available_width {
+                    let desc_width = available_width
+                        .saturating_sub(fixed_columns_width)
+                        .saturating_sub(source_reserved);
                     // Use char count for truncation to avoid slicing in the middle of
                     // multi-byte UTF-8 characters (e.g., fancy quotes like ")
-                    let desc_text = if desc.chars().count() > remaining_width {
+                    let desc_text = if desc.chars().count() > desc_width {
                         // Truncate description if it's too long
                         let truncated: String = desc
                             .chars()
-                            .take(remaining_width.saturating_sub(3))
+                            .take(desc_width.saturating_sub(3))
                             .collect();
                         format!("{}...", truncated)
                     } else {
                         desc.clone()
                     };
+                    let desc_display_width = desc_text.chars().count();
                     spans.push(Span::styled(desc_text, base_style));
+                    // Pad description to fill its allocated space
+                    let desc_padding = desc_width.saturating_sub(desc_display_width);
+                    if desc_padding > 0 {
+                        spans.push(Span::styled(" ".repeat(desc_padding), base_style));
+                    }
+                }
+            } else {
+                // No description, but still need to pad to align source column
+                let desc_width = available_width
+                    .saturating_sub(fixed_columns_width)
+                    .saturating_sub(source_reserved);
+                if desc_width > 0 {
+                    spans.push(Span::styled(" ".repeat(desc_width), base_style));
                 }
             }
 
-            // Fill remaining space with background
+            // Spacing before source column
+            spans.push(Span::styled(" ".repeat(column_spacing), base_style));
+
+            // Column 4: Source (right-aligned, fixed width)
+            let source_style = if suggestion.disabled {
+                base_style
+            } else if is_selected {
+                Style::default()
+                    .fg(theme.line_number_fg)
+                    .bg(theme.suggestion_selected_bg)
+                    .add_modifier(Modifier::DIM)
+            } else if is_hovered {
+                Style::default()
+                    .fg(theme.line_number_fg)
+                    .bg(theme.menu_hover_bg)
+                    .add_modifier(Modifier::DIM)
+            } else {
+                Style::default()
+                    .fg(theme.line_number_fg)
+                    .bg(theme.suggestion_bg)
+                    .add_modifier(Modifier::DIM)
+            };
+
+            if let Some(source) = &suggestion.source {
+                let source_text = match source {
+                    CommandSource::Builtin => "builtin".to_string(),
+                    CommandSource::Plugin(name) => name.clone(),
+                };
+                let source_char_count = source_text.chars().count();
+                let source_display = if source_char_count > source_column_width {
+                    // Truncate source if too long
+                    let truncated: String = source_text
+                        .chars()
+                        .take(source_column_width - 1)
+                        .collect();
+                    format!("{}…", truncated)
+                } else {
+                    source_text
+                };
+                let source_display_width = source_display.chars().count();
+                // Right-align the source text within its column
+                let source_padding = source_column_width.saturating_sub(source_display_width);
+                if source_padding > 0 {
+                    spans.push(Span::styled(" ".repeat(source_padding), base_style));
+                }
+                spans.push(Span::styled(source_display, source_style));
+            } else {
+                // No source info, just pad
+                spans.push(Span::styled(" ".repeat(source_column_width), base_style));
+            }
+
+            // Fill any remaining space with background (shouldn't be needed but safe)
             let current_width: usize = spans.iter().map(|s| s.content.len()).sum();
             if current_width < available_width {
                 spans.push(Span::styled(
