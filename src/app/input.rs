@@ -2210,7 +2210,10 @@ impl Editor {
                 // Dispatch MouseMove hook to plugins (fire-and-forget, no blocking check)
                 if let Some(ts_manager) = &self.ts_plugin_manager {
                     // Find content rect for the split under the mouse
-                    let content_rect = self.cached_layout.split_areas.iter()
+                    let content_rect = self
+                        .cached_layout
+                        .split_areas
+                        .iter()
                         .find(|(_, _, content_rect, _, _, _)| {
                             col >= content_rect.x
                                 && col < content_rect.x + content_rect.width
@@ -2219,9 +2222,7 @@ impl Editor {
                         })
                         .map(|(_, _, rect, _, _, _)| *rect);
 
-                    let (content_x, content_y) = content_rect
-                        .map(|r| (r.x, r.y))
-                        .unwrap_or((0, 0));
+                    let (content_x, content_y) = content_rect.map(|r| (r.x, r.y)).unwrap_or((0, 0));
 
                     let hook_args = HookArgs::MouseMove {
                         column: col,

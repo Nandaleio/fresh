@@ -4279,35 +4279,36 @@ impl Editor {
                 };
 
                 // Create a split with the new buffer
-                let created_split_id = match self.split_manager.split_active(split_dir, buffer_id, ratio) {
-                    Ok(new_split_id) => {
-                        // Create independent view state for the new split with the buffer in tabs
-                        let mut view_state = SplitViewState::with_buffer(
-                            self.terminal_width,
-                            self.terminal_height,
-                            buffer_id,
-                        );
-                        view_state.viewport.line_wrap_enabled = self.config.editor.line_wrap;
-                        self.split_view_states.insert(new_split_id, view_state);
+                let created_split_id =
+                    match self.split_manager.split_active(split_dir, buffer_id, ratio) {
+                        Ok(new_split_id) => {
+                            // Create independent view state for the new split with the buffer in tabs
+                            let mut view_state = SplitViewState::with_buffer(
+                                self.terminal_width,
+                                self.terminal_height,
+                                buffer_id,
+                            );
+                            view_state.viewport.line_wrap_enabled = self.config.editor.line_wrap;
+                            self.split_view_states.insert(new_split_id, view_state);
 
-                        // Focus the new split (the diagnostics panel)
-                        self.split_manager.set_active_split(new_split_id);
-                        self.active_buffer = buffer_id;
+                            // Focus the new split (the diagnostics panel)
+                            self.split_manager.set_active_split(new_split_id);
+                            self.active_buffer = buffer_id;
 
-                        tracing::info!(
-                            "Created {:?} split with virtual buffer {:?}",
-                            split_dir,
-                            buffer_id
-                        );
-                        Some(new_split_id)
-                    }
-                    Err(e) => {
-                        tracing::error!("Failed to create split: {}", e);
-                        // Fall back to just switching to the buffer
-                        self.set_active_buffer(buffer_id);
-                        None
-                    }
-                };
+                            tracing::info!(
+                                "Created {:?} split with virtual buffer {:?}",
+                                split_dir,
+                                buffer_id
+                            );
+                            Some(new_split_id)
+                        }
+                        Err(e) => {
+                            tracing::error!("Failed to create split: {}", e);
+                            // Fall back to just switching to the buffer
+                            self.set_active_buffer(buffer_id);
+                            None
+                        }
+                    };
 
                 // Send response with buffer ID and split ID
                 if let Some(req_id) = request_id {

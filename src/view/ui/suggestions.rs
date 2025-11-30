@@ -217,10 +217,8 @@ impl SuggestionsRenderer {
                     // multi-byte UTF-8 characters (e.g., fancy quotes like ")
                     let desc_text = if desc.chars().count() > desc_width {
                         // Truncate description if it's too long
-                        let truncated: String = desc
-                            .chars()
-                            .take(desc_width.saturating_sub(3))
-                            .collect();
+                        let truncated: String =
+                            desc.chars().take(desc_width.saturating_sub(3)).collect();
                         format!("{}...", truncated)
                     } else {
                         desc.clone()
@@ -274,10 +272,8 @@ impl SuggestionsRenderer {
                 let source_char_count = source_text.chars().count();
                 let source_display = if source_char_count > source_column_width {
                     // Truncate source if too long
-                    let truncated: String = source_text
-                        .chars()
-                        .take(source_column_width - 1)
-                        .collect();
+                    let truncated: String =
+                        source_text.chars().take(source_column_width - 1).collect();
                     format!("{}…", truncated)
                 } else {
                     source_text

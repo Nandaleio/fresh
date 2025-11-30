@@ -561,7 +561,12 @@ pub fn hook_args_to_json(args: &HookArgs) -> Result<String> {
                 "content_y": content_y,
             })
         }
-        HookArgs::MouseMove { column, row, content_x, content_y } => {
+        HookArgs::MouseMove {
+            column,
+            row,
+            content_x,
+            content_y,
+        } => {
             serde_json::json!({
                 "column": column,
                 "row": row,

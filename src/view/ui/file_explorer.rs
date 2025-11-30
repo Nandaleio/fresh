@@ -125,8 +125,8 @@ impl FileExplorerRenderer {
         } else {
             theme.line_number_fg
         };
-        let close_button = ratatui::widgets::Paragraph::new("×")
-            .style(Style::default().fg(close_fg));
+        let close_button =
+            ratatui::widgets::Paragraph::new("×").style(Style::default().fg(close_fg));
         let close_area = Rect::new(close_button_x, area.y, 1, 1);
         frame.render_widget(close_button, close_area);
 

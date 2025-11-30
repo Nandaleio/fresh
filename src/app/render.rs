@@ -51,9 +51,13 @@ impl Editor {
         // Status bar is hidden when suggestions popup is shown
         // Search options bar is shown when in search prompt
         let constraints = vec![
-            Constraint::Length(1),                                       // Menu bar
-            Constraint::Min(0),                                          // Main content area
-            Constraint::Length(if has_suggestions || has_file_browser { 0 } else { 1 }), // Status bar (hidden with popups)
+            Constraint::Length(1), // Menu bar
+            Constraint::Min(0),    // Main content area
+            Constraint::Length(if has_suggestions || has_file_browser {
+                0
+            } else {
+                1
+            }), // Status bar (hidden with popups)
             Constraint::Length(if show_search_options { 1 } else { 0 }), // Search options bar
             Constraint::Length(1), // Prompt line (always reserved)
         ];

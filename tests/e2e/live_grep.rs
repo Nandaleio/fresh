@@ -93,9 +93,7 @@ fn test_live_grep_basic_search() {
     );
 
     // Press Escape to cancel
-    harness
-        .send_key(KeyCode::Esc, KeyModifiers::NONE)
-        .unwrap();
+    harness.send_key(KeyCode::Esc, KeyModifiers::NONE).unwrap();
     harness.render().unwrap();
 
     // Verify we're back to normal state
@@ -259,9 +257,7 @@ fn test_live_grep_preview_split() {
     );
 
     // Press ESC to cancel
-    harness
-        .send_key(KeyCode::Esc, KeyModifiers::NONE)
-        .unwrap();
+    harness.send_key(KeyCode::Esc, KeyModifiers::NONE).unwrap();
 
     // Wait for cleanup
     for _ in 0..5 {
@@ -360,8 +356,6 @@ fn test_live_grep_input_preserved() {
     );
 
     // Clean up
-    harness
-        .send_key(KeyCode::Esc, KeyModifiers::NONE)
-        .unwrap();
+    harness.send_key(KeyCode::Esc, KeyModifiers::NONE).unwrap();
     harness.render().unwrap();
 }

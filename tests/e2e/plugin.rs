@@ -1981,9 +1981,7 @@ editor.setStatus("Test source plugin loaded!");
     // appears AND builtin commands show "builtin" confirms the feature works
 
     // Also verify that builtin commands still show "builtin"
-    harness
-        .send_key(KeyCode::Esc, KeyModifiers::NONE)
-        .unwrap();
+    harness.send_key(KeyCode::Esc, KeyModifiers::NONE).unwrap();
     harness.render().unwrap();
 
     // Open palette again and search for a builtin command
