@@ -49,8 +49,14 @@ jobs:
           cd aur-repo
           sed -i "s/^pkgver=.*/pkgver=${{ steps.version.outputs.version }}/" PKGBUILD
           sed -i "s/^pkgrel=.*/pkgrel=1/" PKGBUILD
-          # Replace multi-line sha256sums array (handles both single and multi-line formats)
-          sed -i '/^sha256sums=(/,/)$/c\sha256sums=("${{ steps.checksum.outputs.sha256 }}" "SKIP")' PKGBUILD
+          # Replace sha256sums array using awk (handles both single and multi-line formats safely)
+          awk -v sha="${{ steps.checksum.outputs.sha256 }}" '
+            /^sha256sums=\(.*\)$/ { print "sha256sums=(\"" sha "\" \"SKIP\")"; next }
+            /^sha256sums=\(/ { in_sha=1; print "sha256sums=(\"" sha "\" \"SKIP\")"; next }
+            in_sha && /\)[[:space:]]*$/ { in_sha=0; next }
+            in_sha { next }
+            { print }
+          ' PKGBUILD > PKGBUILD.tmp && mv PKGBUILD.tmp PKGBUILD
           echo "Updated PKGBUILD:"
           cat PKGBUILD
 
