@@ -1058,3 +1058,120 @@ fn test_session_restore_terminal_active_buffer() {
         );
     }
 }
+
+/// Test that switching from terminal split to another split exits terminal mode
+/// and allows the new buffer to receive keystrokes.
+///
+/// Regression test for: When clicking on another split while in terminal mode,
+/// terminal_mode stayed true but active buffer changed, causing keys to go nowhere.
+#[test]
+fn test_terminal_split_switch_exits_terminal_mode() {
+    let mut harness = harness_or_return!(120, 30);
+
+    // Create a vertical split via command palette
+    harness
+        .send_key(KeyCode::Char('p'), KeyModifiers::CONTROL)
+        .unwrap();
+    harness.render().unwrap();
+    harness.type_text("split vert").unwrap();
+    harness
+        .send_key(KeyCode::Enter, KeyModifiers::NONE)
+        .unwrap();
+    harness.render().unwrap();
+
+    // Now we have two splits. Open a terminal in the current (right) split
+    harness.editor_mut().open_terminal();
+    harness.render().unwrap();
+
+    // Verify we're in terminal mode
+    assert!(
+        harness.editor().is_terminal_mode(),
+        "Should be in terminal mode after opening terminal"
+    );
+
+    let terminal_buffer = harness.editor().active_buffer_id();
+    assert!(
+        harness.editor().is_terminal_buffer(terminal_buffer),
+        "Active buffer should be terminal"
+    );
+
+    // Use command palette to switch to previous split (the left one with [No Name])
+    // First exit terminal mode temporarily to access command palette
+    harness
+        .send_key(KeyCode::Char(' '), KeyModifiers::CONTROL)
+        .unwrap();
+    harness.render().unwrap();
+    assert!(
+        !harness.editor().is_terminal_mode(),
+        "Should have exited terminal mode with Ctrl+Space"
+    );
+
+    // Re-enter terminal mode so we can test switching OUT of it
+    harness
+        .send_key(KeyCode::Char(' '), KeyModifiers::CONTROL)
+        .unwrap();
+    harness.render().unwrap();
+    assert!(
+        harness.editor().is_terminal_mode(),
+        "Should be back in terminal mode"
+    );
+
+    // Now simulate clicking on the left split by using "Previous Split" command
+    // But we can't use command palette while in terminal mode...
+    // Instead, let's click directly on the left side of the screen
+
+    // Click on the left half of the screen (column 10, which should be in the left split)
+    // The left split starts at x=0 for a 120-wide screen split vertically
+    harness
+        .send_mouse(crossterm::event::MouseEvent {
+            kind: crossterm::event::MouseEventKind::Down(crossterm::event::MouseButton::Left),
+            column: 10,  // column - well into left split
+            row: 15,     // row - middle of content area
+            modifiers: KeyModifiers::NONE,
+        })
+        .unwrap();
+    harness.render().unwrap();
+
+    // Now verify terminal mode is OFF
+    assert!(
+        !harness.editor().is_terminal_mode(),
+        "Terminal mode should be OFF after clicking on non-terminal split"
+    );
+
+    // Verify the active buffer is no longer the terminal
+    let active_after_click = harness.editor().active_buffer_id();
+    assert!(
+        !harness.editor().is_terminal_buffer(active_after_click),
+        "Active buffer should be non-terminal after clicking left split"
+    );
+
+    // Most importantly: verify that keystrokes work in the new buffer
+    // Get buffer content before typing
+    let content_before = harness
+        .editor()
+        .get_buffer_content(active_after_click)
+        .unwrap_or_default();
+
+    // Type some characters
+    harness.type_text("hello").unwrap();
+
+    // Get buffer content after typing
+    let content_after = harness
+        .editor()
+        .get_buffer_content(active_after_click)
+        .unwrap_or_default();
+
+    // Content should have changed (text was inserted)
+    assert_ne!(
+        content_before, content_after,
+        "Buffer content should change after typing - keys should work in new split. \
+         Before: {:?}, After: {:?}",
+        content_before, content_after
+    );
+
+    assert!(
+        content_after.contains("hello"),
+        "Buffer should contain 'hello' after typing, got: {:?}",
+        content_after
+    );
+}
