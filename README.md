@@ -47,7 +47,8 @@ Fresh is engineered for speed. It delivers a low-latency experience, with text a
 
 | Platform | Method |
 |----------|--------|
-| macOS | [Homebrew](#macos-homebrew) |
+| macOS | [brew](#brew) |
+| Bazzite/Bluefin/Aurora Linux | [brew](#brew) |
 | Arch Linux | [AUR](#arch-linux-aur) |
 | Debian/Ubuntu | [.deb](#debianubuntu-deb) |
 | Fedora/RHEL | [.rpm](#fedorarhelopensuse-rpm) |
@@ -59,7 +60,9 @@ Fresh is engineered for speed. It delivers a low-latency experience, with text a
 | Nix | [Nix flakes](#nix-flakes) |
 | Developers | [From source](#from-source) |
 
-### Homebrew (macOS, Linux Bazzite/Bluefin/Aurora)
+### Brew
+
+On macOS and some linux distros (Bazzite/Bluefin/Aurora):
 
 ```bash
 brew tap sinelaw/fresh
