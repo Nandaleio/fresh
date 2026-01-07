@@ -844,6 +844,7 @@ fn test_lsp_waiting_indicator() -> anyhow::Result<()> {
     target_os = "windows",
     ignore = "FakeLspServer uses a Bash script which is not available on Windows"
 )]
+#[ignore = "Semantic highlighting temporarily disabled"]
 fn test_semantic_tokens_version_gating() -> anyhow::Result<()> {
     use crate::common::fake_lsp::FakeLspServer;
 
