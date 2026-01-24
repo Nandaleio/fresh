@@ -13,7 +13,7 @@ This directory contains pending work tracking. Completed plans have been removed
 ## User-Facing Documentation
 
 See the parent [docs/](../) directory:
-- [USER_GUIDE.md](../USER_GUIDE.md) - User guide
-- [PLUGIN_DEVELOPMENT.md](../PLUGIN_DEVELOPMENT.md) - Plugin development guide
-- [plugin-api.md](../plugin-api.md) - Full plugin API reference
-- [ARCHITECTURE.md](../ARCHITECTURE.md) - System architecture
+- [User Guide](../guide/) - User guide
+- [Plugin Development](../development/plugin-development) - Plugin development guide
+- [Plugin API](../development/plugin-api) - Full plugin API reference
+- [Architecture](../development/architecture) - System architecture
