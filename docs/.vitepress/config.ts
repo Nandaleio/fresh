@@ -17,7 +17,7 @@ export default defineConfig({
     logo: { light: "/logo.svg", dark: "/logo.svg" },
 
     nav: [
-      { text: "Homepage", link: "https://radiorambo.github.io/fresh" },
+      { text: "Homepage", link: "https://sinelaw.github.io/fresh" },
       { text: "Getting Started", link: "/index" },
       { text: "Download", link: "https://github.com/sinelaw/fresh/releases/latest" },
       {
