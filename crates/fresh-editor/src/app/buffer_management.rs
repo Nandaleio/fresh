@@ -1028,22 +1028,46 @@ impl Editor {
             }
         }
 
-        // Find a visible (non-hidden) replacement buffer
-        // Hidden buffers should never be switched to from UI
-        let visible_replacement = self.buffers.keys().find(|&&bid| {
-            bid != id
-                && !self
-                    .buffer_metadata
-                    .get(&bid)
-                    .map(|m| m.hidden_from_tabs)
-                    .unwrap_or(false)
+        // Find a replacement buffer, preferring the most recently focused one
+        // First try focus history, then fall back to any visible buffer
+        let active_split = self.split_manager.active_split();
+        let replacement_from_history = self
+            .split_view_states
+            .get(&active_split)
+            .and_then(|vs| {
+                // Find the most recently focused buffer that's still open and visible
+                vs.focus_history
+                    .iter()
+                    .rev()
+                    .find(|&&bid| {
+                        bid != id
+                            && self.buffers.contains_key(&bid)
+                            && !self
+                                .buffer_metadata
+                                .get(&bid)
+                                .map(|m| m.hidden_from_tabs)
+                                .unwrap_or(false)
+                    })
+                    .copied()
+            });
+
+        // Fall back to any visible buffer if no history match
+        let visible_replacement = replacement_from_history.or_else(|| {
+            self.buffers.keys().find(|&&bid| {
+                bid != id
+                    && !self
+                        .buffer_metadata
+                        .get(&bid)
+                        .map(|m| m.hidden_from_tabs)
+                        .unwrap_or(false)
+            }).copied()
         });
 
         let is_last_visible_buffer = visible_replacement.is_none();
         let replacement_buffer = if is_last_visible_buffer {
             self.new_buffer()
         } else {
-            *visible_replacement.unwrap()
+            visible_replacement.unwrap()
         };
 
         // Switch to replacement buffer BEFORE updating splits.
@@ -1081,9 +1105,10 @@ impl Editor {
         // This prevents stale entries when the same panel_id is reused later
         self.panel_ids.retain(|_, &mut buf_id| buf_id != id);
 
-        // Remove buffer from all splits' open_buffers lists
+        // Remove buffer from all splits' open_buffers lists and focus history
         for view_state in self.split_view_states.values_mut() {
             view_state.remove_buffer(id);
+            view_state.remove_from_history(id);
         }
 
         // If this was the last visible buffer, focus file explorer

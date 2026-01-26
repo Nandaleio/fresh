@@ -103,8 +103,9 @@ pub struct SplitViewState {
     /// Whether the layout needs to be rebuilt (buffer changed, transform changed, etc.)
     pub layout_dirty: bool,
 
-    /// Previously active buffer in this split (for "Switch to Previous Tab" command)
-    pub previous_buffer: Option<BufferId>,
+    /// Focus history stack for this split (most recent at end)
+    /// Used for "Switch to Previous Tab" and for returning to previous buffer when closing
+    pub focus_history: Vec<BufferId>,
 
     /// Sync group ID for synchronized scrolling
     /// Splits with the same sync_group will scroll together
@@ -132,7 +133,7 @@ impl SplitViewState {
             view_transform: None,
             layout: None,
             layout_dirty: true, // Start dirty so first operation builds layout
-            previous_buffer: None,
+            focus_history: Vec::new(),
             sync_group: None,
             composite_view: None,
         }
@@ -152,7 +153,7 @@ impl SplitViewState {
             view_transform: None,
             layout: None,
             layout_dirty: true, // Start dirty so first operation builds layout
-            previous_buffer: None,
+            focus_history: Vec::new(),
             sync_group: None,
             composite_view: None,
         }
@@ -207,6 +208,33 @@ impl SplitViewState {
     /// Check if a buffer is open in this split
     pub fn has_buffer(&self, buffer_id: BufferId) -> bool {
         self.open_buffers.contains(&buffer_id)
+    }
+
+    /// Push a buffer to the focus history (LRU-style)
+    /// If the buffer is already in history, it's moved to the end
+    pub fn push_focus(&mut self, buffer_id: BufferId) {
+        // Remove if already in history (LRU-style)
+        self.focus_history.retain(|&id| id != buffer_id);
+        self.focus_history.push(buffer_id);
+        // Limit to 50 entries
+        if self.focus_history.len() > 50 {
+            self.focus_history.remove(0);
+        }
+    }
+
+    /// Get the most recently focused buffer (without removing it)
+    pub fn previous_buffer(&self) -> Option<BufferId> {
+        self.focus_history.last().copied()
+    }
+
+    /// Pop the most recent buffer from focus history
+    pub fn pop_focus(&mut self) -> Option<BufferId> {
+        self.focus_history.pop()
+    }
+
+    /// Remove a buffer from the focus history (called when buffer is closed)
+    pub fn remove_from_history(&mut self, buffer_id: BufferId) {
+        self.focus_history.retain(|&id| id != buffer_id);
     }
 }
 

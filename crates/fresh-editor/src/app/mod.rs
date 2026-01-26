@@ -1790,8 +1790,8 @@ impl Editor {
         let active_split = self.split_manager.active_split();
         if let Some(view_state) = self.split_view_states.get_mut(&active_split) {
             view_state.add_buffer(buffer_id);
-            // Update the previous buffer tracker
-            view_state.previous_buffer = Some(previous);
+            // Update the focus history (push the previous buffer we're leaving)
+            view_state.push_focus(previous);
         }
 
         // Ensure the newly active tab is visible
@@ -1855,7 +1855,7 @@ impl Editor {
                 self.position_history.commit_pending_movement();
                 if let Some(view_state) = self.split_view_states.get_mut(&split_id) {
                     view_state.add_buffer(buffer_id);
-                    view_state.previous_buffer = Some(previous_buffer);
+                    view_state.push_focus(previous_buffer);
                 }
                 // Note: We don't sync file explorer here to avoid flicker during split focus changes.
                 // File explorer syncs when explicitly focused via focus_file_explorer().

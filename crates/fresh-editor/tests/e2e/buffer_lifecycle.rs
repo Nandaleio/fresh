@@ -582,3 +582,64 @@ fn test_next_buffer_skips_hidden_buffers() {
         );
     }
 }
+
+/// Test that closing a buffer returns to the previously focused buffer (not just adjacent tab)
+#[test]
+fn test_close_returns_to_previous_focused() {
+    let mut harness = EditorTestHarness::new(80, 24).unwrap();
+
+    // Create temp files with identifiable content
+    let temp_dir = tempfile::TempDir::new().unwrap();
+    let file_a = temp_dir.path().join("file_a.txt");
+    let file_b = temp_dir.path().join("file_b.txt");
+    let file_c = temp_dir.path().join("file_c.txt");
+    std::fs::write(&file_a, "CONTENT_A").unwrap();
+    std::fs::write(&file_b, "CONTENT_B").unwrap();
+    std::fs::write(&file_c, "CONTENT_C").unwrap();
+
+    // Open A, B, C in that order
+    harness.open_file(&file_a).unwrap();
+    harness.render().unwrap();
+    harness.assert_screen_contains("CONTENT_A");
+
+    harness.open_file(&file_b).unwrap();
+    harness.render().unwrap();
+    harness.assert_screen_contains("CONTENT_B");
+
+    harness.open_file(&file_c).unwrap();
+    harness.render().unwrap();
+    harness.assert_screen_contains("CONTENT_C");
+
+    // Focus order: A -> B -> C
+    // Now switch to A
+    // Find file_a tab and click it - but that's complex, let's use the switch command
+    // Actually, let's use Ctrl+Tab or similar to switch tabs
+    // For simplicity, let's re-open A to make it active (it won't duplicate)
+
+    // Switch to file A by opening it again (it will just switch to it)
+    harness.open_file(&file_a).unwrap();
+    harness.render().unwrap();
+    harness.assert_screen_contains("CONTENT_A");
+
+    // Focus order is now: B -> C -> A
+    // Switch to B
+    harness.open_file(&file_b).unwrap();
+    harness.render().unwrap();
+    harness.assert_screen_contains("CONTENT_B");
+
+    // Focus order is now: C -> A -> B
+    // Now B is active
+    // Close B - should return to A (the previously focused buffer), not C (adjacent)
+    // Note: Default keybinding for close_tab is Alt+W
+    harness.send_key(KeyCode::Char('w'), KeyModifiers::ALT).unwrap();
+    harness.render().unwrap();
+
+    // Should now be on A
+    let screen = harness.screen_to_string();
+    assert!(
+        screen.contains("CONTENT_A"),
+        "After closing B, should return to previously focused A. Screen:\n{}",
+        screen
+    );
+}
+
