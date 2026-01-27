@@ -130,6 +130,15 @@
     color: #00d9a3;
 }
 
+/* Heading spacing */
+.vp-doc h2,
+.vp-doc h3,
+.vp-doc h4,
+.vp-doc h5,
+.vp-doc h6 {
+    margin-top: 2rem;
+}
+
 /* Quote blocks */
 .vp-doc blockquote {
     border-left: 4px solid #00d9a3;
