@@ -1,5 +1,37 @@
 # Release Notes
 
+## 0.1.94
+
+### Documentation
+
+* **New documentation site**: @radiorambo contributed a complete restructure and build for a documentation section in the website. Kudos, awesome work!
+
+See [getfresh.dev/docs](https://getfresh.dev/docs)
+
+### Features
+
+* **Event Debug Dialog**: New diagnostic tool for troubleshooting keyboard and terminal issues. Shows raw key codes and modifiers as they are received, helping diagnose keybinding problems. Access via Command Palette → "Event Debug".
+
+### Bug Fixes
+
+* **Case Conversion Enhancement**: To Upper (Alt+U) and To Lower (Alt+L) now automatically select the current word when no text is selected, matching common editor behavior.
+
+* **Block Selection Copy**: Fixed Ctrl+C copying entire lines instead of the rectangular region. Block selection (Alt+Shift+Arrow) now correctly copies only the characters within the column bounds for each line.
+
+* **Block Selection Editing**: Block selection now converts to multiple cursors for editing actions (typing, delete, backspace), enabling proper rectangular editing.
+
+* **Dropdown Menu Position**: Fixed Help menu dropdown appearing at wrong position when Explorer menu was hidden. Menu position calculation now correctly skips hidden menus.
+
+* **Settings Access**: Moved Settings to Edit menu and removed broken Ctrl+, keybinding which doesn't work reliably in terminals. Settings remain accessible via Edit → Settings... and Command Palette.
+
+* **Block Selection Rendering**: Fixed double rendering of block selections that could cause visual artifacts.
+
+### Internal
+
+* **Remote Save Optimization**: SSH remote editing now uses recipe-based patched saves. For large files with small edits, only the changed portions are transferred instead of the entire file. A 10MB file with a 100-byte edit now transfers ~200 bytes instead of 10MB.
+
+---
+
 ## 0.1.93
 
 ### Experimental
