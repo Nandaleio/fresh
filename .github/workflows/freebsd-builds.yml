@@ -8,21 +8,9 @@ jobs:
   build-freebsd:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           submodules: recursive
-
-      # Minimal Caching for Cargo
-      - name: Cache Cargo Registry
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-          key: freebsd-cargo-minimal-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            freebsd-cargo-minimal-
 
       - name: Build in FreeBSD
         id: build
@@ -34,8 +22,13 @@ jobs:
           prepare: |
             pkg install -y rust pkgconf
           run: |
+            set -e  # Exit immediately on any error
+
             # 1. Build project
             cargo build --release --locked
+
+            # Verify binary was built
+            ls -la target/release/fresh
 
             # 2. Setup Variables
             TARGET="x86_64-unknown-freebsd"
@@ -52,8 +45,12 @@ jobs:
             tar -cJvf "${ARCHIVE_NAME}.tar.xz" "${ARCHIVE_NAME}"
             sha256 -q "${ARCHIVE_NAME}.tar.xz" > "${ARCHIVE_NAME}.tar.xz.sha256"
 
+            # Verify archive contents
+            echo "Archive contents:"
+            tar -tJf "${ARCHIVE_NAME}.tar.xz" | grep -E '(fresh|README)' | head -5
+
       - name: Upload artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: fresh-editor-freebsd
           path: |
