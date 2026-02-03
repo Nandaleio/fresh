@@ -10,7 +10,19 @@
 
 * **Bundle Package Type**: New package type containing multiple languages, plugins, and themes in a single package. Shown with "B" tag in package manager.
 
+* **Code Tour Plugin**: JSON-driven codebase walkthrough system. Define tours in `.fresh-tour.json` with step-by-step navigation, visual highlighting, and explanatory text.
+
 ### Bug Fixes
+
+* Fixed scrollbar and mouse wheel scrolling not working with line wrap enabled.
+
+* Fixed scrollbar thumb drag jumping to mouse position instead of smooth dragging.
+
+* Fixed AltGr character input not working on Windows (#762).
+
+* Fixed crash when opening large files with non-resynchronizable encodings from CLI.
+
+* Fixed UTF-8 files (especially Chinese text) misdetected as Windows-1250 due to truncated samples.
 
 * Fixed custom themes not appearing in "Select Theme" on macOS due to incorrect config path resolution.
 
@@ -25,6 +37,8 @@
 * Refactored config path handling to pass DirectoryContext via call chain instead of static methods.
 
 * Added shadow model property-based tests for TextBuffer.
+
+* Fixed i18n stack overflow on Windows by using minify_key and larger stack size.
 
 * Bumped tree-sitter (0.26.5), actions/checkout (v6), actions/upload-pages-artifact (v4) (@dependabot).
 
