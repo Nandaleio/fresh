@@ -36,6 +36,7 @@ pub mod explorer_menu;
 pub mod external_file_save_as_tab;
 pub mod file_browser;
 pub mod file_explorer;
+pub mod file_explorer_compact_chain;
 pub mod file_permissions;
 pub mod flash;
 pub mod folding;

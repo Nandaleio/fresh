@@ -181,6 +181,14 @@ impl FileTreeView {
         if !was_expanded {
             self.expand_with_chain(node_id).await?;
         }
+        // The expansion may have folded the cursor's row into a deeper
+        // chain anchor; re-promote so the cursor stays on a rendered row.
+        // Why: select_next/prev locate the cursor by id within
+        // filtered_visible_nodes(); an absorbed cursor is missing from
+        // that list and arrow keys silently no-op.
+        if let Some(sel) = self.selected_node {
+            self.selected_node = Some(self.promote_to_anchor(sel));
+        }
         Ok(())
     }
 
@@ -1422,6 +1430,46 @@ mod tests {
         // `collapse_node`'s own contract) so the chain is fully reset.
         view.toggle_with_chain(chain_id).await.unwrap();
         assert!(view.tree().get_node(chain_id).unwrap().is_collapsed());
+    }
+
+    #[tokio::test]
+    async fn test_toggle_with_chain_keeps_cursor_on_visible_row() {
+        // Regression: pressing Enter on a directory whose subtree folds
+        // into a chain used to leave the cursor on the now-absorbed
+        // directory, so its id was absent from `filtered_visible_nodes()`
+        // and arrow-key navigation silently no-op'd.
+        let (_t, mut view) = create_chain_view().await;
+        let root_id = view.tree().root_id();
+        view.tree_mut().expand_node(root_id).await.unwrap();
+
+        let chain_id = id_for(&view, "chain");
+
+        // Cursor sits on `chain` (collapsed → visible) before the user
+        // hits Enter.
+        view.set_selected(Some(chain_id));
+        assert_eq!(view.get_selected(), Some(chain_id));
+
+        // Enter expands the whole chain; `chain`, `a`, `b` become
+        // absorbed and `c` is the chain anchor. The cursor must hop to
+        // `c` so it lands on a rendered row. (The deeper nodes only
+        // exist in the tree after expansion lazily loads them, so look
+        // up `c`'s id afterwards.)
+        view.toggle_with_chain(chain_id).await.unwrap();
+        let c_id = id_for(&view, "chain/a/b/c");
+        assert_eq!(view.get_selected(), Some(c_id));
+
+        // Sanity: the new cursor id is actually present in the visible
+        // rows, so `select_next`/`select_prev` can locate it.
+        let visible: Vec<_> = view
+            .get_display_nodes()
+            .into_iter()
+            .map(|(id, _)| id)
+            .collect();
+        assert!(visible.contains(&c_id));
+
+        // And arrow-key navigation still works after the expansion.
+        view.select_next();
+        assert_ne!(view.get_selected(), Some(c_id));
     }
 
     #[tokio::test]
