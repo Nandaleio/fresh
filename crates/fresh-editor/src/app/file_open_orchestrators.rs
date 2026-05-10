@@ -89,7 +89,10 @@ impl Editor {
         }
 
         // Use display_name from metadata for relative path display
-        let display_name = self.active_window().buffer_metadata.get(&buffer_id)
+        let display_name = self
+            .active_window()
+            .buffer_metadata
+            .get(&buffer_id)
             .map(|m| m.display_name.clone())
             .unwrap_or_else(|| path.display().to_string());
 
@@ -428,7 +431,9 @@ impl Editor {
         }
 
         // Store metadata for this buffer
-        self.active_window_mut().buffer_metadata.insert(buffer_id, metadata);
+        self.active_window_mut()
+            .buffer_metadata
+            .insert(buffer_id, metadata);
 
         // Add buffer to the preferred split's tabs (but don't switch to it)
         // Uses preferred_split_for_file() to avoid opening in labeled splits (e.g., sidebars)
@@ -560,7 +565,9 @@ impl Editor {
             &self.working_dir,
             self.authority.path_translation.as_ref(),
         );
-        self.active_window_mut().buffer_metadata.insert(buffer_id, metadata);
+        self.active_window_mut()
+            .buffer_metadata
+            .insert(buffer_id, metadata);
 
         // Add to preferred split's tabs (avoids labeled splits like sidebars)
         let target_split = self.preferred_split_for_file();
@@ -691,7 +698,9 @@ impl Editor {
             &self.working_dir,
             self.authority.path_translation.as_ref(),
         );
-        self.active_window_mut().buffer_metadata.insert(buffer_id, metadata);
+        self.active_window_mut()
+            .buffer_metadata
+            .insert(buffer_id, metadata);
 
         // Add to preferred split's tabs (avoids labeled splits like sidebars)
         let target_split = self.preferred_split_for_file();
@@ -875,7 +884,9 @@ impl Editor {
             &self.working_dir,
             self.authority.path_translation.as_ref(),
         );
-        self.active_window_mut().buffer_metadata.insert(buffer_id, metadata);
+        self.active_window_mut()
+            .buffer_metadata
+            .insert(buffer_id, metadata);
 
         // Add to preferred split's tabs (avoids labeled splits like sidebars)
         let target_split = self.preferred_split_for_file();
@@ -903,7 +914,10 @@ impl Editor {
         self.set_active_buffer(buffer_id);
 
         // Use display_name from metadata for relative path display
-        let display_name = self.active_window().buffer_metadata.get(&buffer_id)
+        let display_name = self
+            .active_window()
+            .buffer_metadata
+            .get(&buffer_id)
             .map(|m| m.display_name.clone())
             .unwrap_or_else(|| path.display().to_string());
 
@@ -1203,7 +1217,9 @@ impl Editor {
         // URI we cached is already the wire-form URI, so the LSP
         // sees the right path.
         self.notify_lsp_file_opened(&container_path, buffer_id, &mut metadata);
-        self.active_window_mut().buffer_metadata.insert(buffer_id, metadata);
+        self.active_window_mut()
+            .buffer_metadata
+            .insert(buffer_id, metadata);
 
         // Wire the buffer into a tab on the preferred split, mirroring
         // the host-file path. Skip `watch_file` — there's no host
